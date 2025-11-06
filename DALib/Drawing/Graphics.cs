@@ -1,11 +1,12 @@
-﻿using DALib.Data;
+﻿using System;
+using System.Linq;
+using System.Text;
+using DALib.Data;
 using DALib.Definitions;
 using DALib.Extensions;
 using DALib.Memory;
 using DALib.Utility;
 using SkiaSharp;
-using System;
-using System.Text;
 
 namespace DALib.Drawing;
 
@@ -62,14 +63,30 @@ public static class Graphics
     /// <param name="yOffset">
     ///     An optional custom offset used to move the image down, since these images are rendered from the bottom up
     /// </param>
-    public static SKImage RenderImage(HpfFile hpf, Palette palette, int yOffset = 0)
-        => SimpleRender(
+    /// <param name="transparency">
+    ///     An optional flag to enable transparency. Some foreground images has luminosity based transparency. This is
+    ///     controlled via SOTP with the <see cref="TileFlags.Transparent" /> flag
+    /// </param>
+    public static SKImage RenderImage(
+        HpfFile hpf,
+        Palette palette,
+        int yOffset = 0,
+        bool transparency = false)
+    {
+        if (transparency)
+        {
+            var semiTransparentColors = palette.Select(color => color.WithLuminanceAlpha());
+            palette = new Palette(semiTransparentColors);
+        }
+
+        return SimpleRender(
             0,
             yOffset,
             hpf.PixelWidth,
             hpf.PixelHeight,
             hpf.Data,
             palette);
+    }
 
     /// <summary>
     ///     Renders a palettized SPF frame
@@ -88,6 +105,34 @@ public static class Graphics
             spf.PixelHeight,
             spf.Data!,
             spfPrimaryColorPalette);
+
+    /// <summary>
+    ///     Renders a palette
+    /// </summary>
+    public static SKImage RenderImage(Palette palette)
+    {
+        using var bitmap = new SKBitmap(16 * 5, 16 * 5);
+
+        using (var canvas = new SKCanvas(bitmap))
+            for (var y = 0; y < 16; y++)
+                for (var x = 0; x < 16; x++)
+                {
+                    var color = palette[x + y * 16];
+
+                    using var paint = new SKPaint();
+                    paint.Color = color;
+                    paint.IsAntialias = true;
+
+                    canvas.DrawRect(
+                        x * 5,
+                        y * 5,
+                        5,
+                        5,
+                        paint);
+                }
+
+        return SKImage.FromBitmap(bitmap);
+    }
 
     /// <summary>
     ///     Renders a colorized SpfFrame
@@ -114,7 +159,11 @@ public static class Graphics
     /// </param>
     public static SKImage RenderImage(EfaFrame efa, EfaBlendingType efaBlendingType = EfaBlendingType.Luminance)
     {
-        using var bitmap = new SKBitmap(efa.ImagePixelWidth, efa.ImagePixelHeight);
+        using var bitmap = new SKBitmap(
+            efa.ImagePixelWidth,
+            efa.ImagePixelHeight,
+            SKColorType.Bgra8888,
+            SKAlphaType.Unpremul);
 
         using var pixMap = bitmap.PeekPixels();
         var pixelBuffer = pixMap.GetPixelSpan<SKColor>();
@@ -183,50 +232,57 @@ public static class Graphics
     ///     The amount of padding to add to the height of the file and beginning rendering position
     /// </param>
     /// <param name="cache">
-    ///     A <see cref="MapImageCache"/> that can be reused to share <see cref="SKImageCache{TKey}"/> caches between multiple map renderings.
+    ///     A <see cref="MapImageCache" /> that can be reused to share <see cref="SKImageCache{TKey}" /> caches between
+    ///     multiple map renderings.
     /// </param>
-
-    public static SKImage RenderMap(MapFile map, DataArchive seoDat, DataArchive iaDat, int foregroundPadding = 512,
+    public static SKImage RenderMap(
+        MapFile map,
+        DataArchive seoDat,
+        DataArchive iaDat,
+        int foregroundPadding = 512,
         MapImageCache? cache = null)
         => RenderMap(
             map,
             Tileset.FromArchive("tilea", seoDat),
             PaletteLookup.FromArchive("mpt", seoDat)
-                .Freeze(),
+                         .Freeze(),
             PaletteLookup.FromArchive("stc", iaDat)
-                .Freeze(),
-            iaDat, foregroundPadding, cache);
+                         .Freeze(),
+            iaDat,
+            foregroundPadding,
+            cache);
 
     /// <summary>
     ///     Renders a MapFile, given already extracted information
     /// </summary>
     /// <param name="map">
-    ///     The <see cref="MapFile"/> to render
+    ///     The <see cref="MapFile" /> to render
     /// </param>
     /// <param name="tiles">
-    ///     A <see cref="Tileset"/> representing a collection of background tiles
+    ///     A <see cref="Tileset" /> representing a collection of background tiles
     /// </param>
     /// <param name="bgPaletteLookup">
-    ///     <see cref="PaletteLookup"/> for background tiles
+    ///     <see cref="PaletteLookup" /> for background tiles
     /// </param>
     /// <param name="fgPaletteLookup">
-    ///     <see cref="PaletteLookup"/> for foreground tiles
+    ///     <see cref="PaletteLookup" /> for foreground tiles
     /// </param>
     /// <param name="iaDat">
-    ///     IA <see cref="DataArchive"/> for reading foreground tile files
+    ///     IA <see cref="DataArchive" /> for reading foreground tile files
     /// </param>
     /// <param name="foregroundPadding">
     ///     The amount of padding to add to the height of the file and beginning rendering position
     /// </param>
     /// <param name="cache">
-    ///     A <see cref="MapImageCache"/> that can be reused to share <see cref="SKImageCache{TKey}"/> caches between multiple map renderings.
+    ///     A <see cref="MapImageCache" /> that can be reused to share <see cref="SKImageCache{TKey}" /> caches between
+    ///     multiple map renderings.
     /// </param>
     public static SKImage RenderMap(
         MapFile map,
         Tileset tiles,
         PaletteLookup bgPaletteLookup,
         PaletteLookup fgPaletteLookup,
-        DataArchive iaDat, 
+        DataArchive iaDat,
         int foregroundPadding = 512,
         MapImageCache? cache = null)
     {
@@ -240,13 +296,14 @@ public static class Graphics
 
         //calculate width and height
         var width = (map.Width + map.Height + 1) * CONSTANTS.HALF_TILE_WIDTH;
-        var height = (map.Width + map.Height + 1 ) * CONSTANTS.HALF_TILE_HEIGHT + foregroundPadding;
+        var height = (map.Width + map.Height + 1) * CONSTANTS.HALF_TILE_HEIGHT + foregroundPadding;
         using var bitmap = new SKBitmap(width, height);
         using var canvas = new SKCanvas(bitmap);
 
         //the first tile drawn is the center tile at the top (0, 0)
         var bgInitialDrawX = (map.Height - 1) * CONSTANTS.HALF_TILE_WIDTH;
         var bgInitialDrawY = foregroundPadding;
+
         try
         {
             //render background tiles and draw them to the canvas
@@ -292,7 +349,7 @@ public static class Graphics
                     var rfgIndex = tile.RightForeground;
 
                     //render left foreground
-                    var lfgImage = cache.LeftForegroundCache.GetOrCreate(
+                    var lfgImage = cache.ForegroundCache.GetOrCreate(
                         lfgIndex,
                         index =>
                         {
@@ -305,14 +362,13 @@ public static class Graphics
                     //for each X axis iteration, we want to move the draw position half a tile to the right and down from the initial draw position
                     var lfgDrawX = fgInitialDrawX + x * CONSTANTS.HALF_TILE_WIDTH;
 
-                    var lfgDrawY = fgInitialDrawY + (x + 1) * CONSTANTS.HALF_TILE_HEIGHT - lfgImage.Height +
-                                   CONSTANTS.HALF_TILE_HEIGHT;
+                    var lfgDrawY = fgInitialDrawY + (x + 1) * CONSTANTS.HALF_TILE_HEIGHT - lfgImage.Height + CONSTANTS.HALF_TILE_HEIGHT;
 
-                    if ((lfgIndex % 10000) > 1)
+                    if (lfgIndex.IsRenderedTileIndex())
                         canvas.DrawImage(lfgImage, lfgDrawX, lfgDrawY);
 
                     //render right foreground
-                    var rfgImage = cache.RightForegroundCache.GetOrCreate(
+                    var rfgImage = cache.ForegroundCache.GetOrCreate(
                         rfgIndex,
                         index =>
                         {
@@ -325,10 +381,9 @@ public static class Graphics
                     //for each X axis iteration, we want to move the draw position half a tile to the right and down from the initial draw position
                     var rfgDrawX = fgInitialDrawX + (x + 1) * CONSTANTS.HALF_TILE_WIDTH;
 
-                    var rfgDrawY = fgInitialDrawY + (x + 1) * CONSTANTS.HALF_TILE_HEIGHT - rfgImage.Height +
-                                   CONSTANTS.HALF_TILE_HEIGHT;
+                    var rfgDrawY = fgInitialDrawY + (x + 1) * CONSTANTS.HALF_TILE_HEIGHT - rfgImage.Height + CONSTANTS.HALF_TILE_HEIGHT;
 
-                    if ((rfgIndex % 10000) > 1)
+                    if (rfgIndex.IsRenderedTileIndex())
                         canvas.DrawImage(rfgImage, rfgDrawX, rfgDrawY);
                 }
 
@@ -336,14 +391,13 @@ public static class Graphics
                 fgInitialDrawX -= CONSTANTS.HALF_TILE_WIDTH;
                 fgInitialDrawY += CONSTANTS.HALF_TILE_HEIGHT;
             }
+
             return SKImage.FromBitmap(bitmap);
-        }
-        finally
+        } finally
         {
             if (dispose)
                 cache.Dispose();
         }
-
     }
 
     /// <summary>

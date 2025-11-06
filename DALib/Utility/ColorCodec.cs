@@ -20,21 +20,21 @@ public static class ColorCodec
         var g = (byte)((encodedColor >> 5) & CONSTANTS.FIVE_BIT_MASK);
         var b = (byte)(encodedColor & CONSTANTS.FIVE_BIT_MASK);
 
-        r = MathEx.ScaleRange<byte, byte>(
+        r = MathEx.ScaleRangeByteOptimized(
             r,
             0,
             CONSTANTS.FIVE_BIT_MASK,
             0,
             byte.MaxValue);
 
-        g = MathEx.ScaleRange<byte, byte>(
+        g = MathEx.ScaleRangeByteOptimized(
             g,
             0,
             CONSTANTS.FIVE_BIT_MASK,
             0,
             byte.MaxValue);
 
-        b = MathEx.ScaleRange<byte, byte>(
+        b = MathEx.ScaleRangeByteOptimized(
             b,
             0,
             CONSTANTS.FIVE_BIT_MASK,
@@ -56,21 +56,21 @@ public static class ColorCodec
         var g = (byte)((encodedColor >> 5) & CONSTANTS.SIX_BIT_MASK);
         var b = (byte)(encodedColor & CONSTANTS.FIVE_BIT_MASK);
 
-        r = MathEx.ScaleRange<byte, byte>(
+        r = MathEx.ScaleRangeByteOptimized(
             r,
             0,
             CONSTANTS.FIVE_BIT_MASK,
             0,
             byte.MaxValue);
 
-        g = MathEx.ScaleRange<byte, byte>(
+        g = MathEx.ScaleRangeByteOptimized(
             g,
             0,
             CONSTANTS.SIX_BIT_MASK,
             0,
             byte.MaxValue);
 
-        b = MathEx.ScaleRange<byte, byte>(
+        b = MathEx.ScaleRangeByteOptimized(
             b,
             0,
             CONSTANTS.FIVE_BIT_MASK,
@@ -88,21 +88,21 @@ public static class ColorCodec
     /// </param>
     public static ushort EncodeRgb555(SKColor color)
     {
-        var r = MathEx.ScaleRange<byte, byte>(
+        var r = MathEx.ScaleRangeByteOptimized(
             color.Red,
             0,
             byte.MaxValue,
             0,
             CONSTANTS.FIVE_BIT_MASK);
 
-        var g = MathEx.ScaleRange<byte, byte>(
+        var g = MathEx.ScaleRangeByteOptimized(
             color.Green,
             0,
             byte.MaxValue,
             0,
             CONSTANTS.FIVE_BIT_MASK);
 
-        var b = MathEx.ScaleRange<byte, byte>(
+        var b = MathEx.ScaleRangeByteOptimized(
             color.Blue,
             0,
             byte.MaxValue,
@@ -120,21 +120,21 @@ public static class ColorCodec
     /// </param>
     public static ushort EncodeRgb565(SKColor color)
     {
-        var r = MathEx.ScaleRange<byte, byte>(
+        var r = MathEx.ScaleRangeByteOptimized(
             color.Red,
             0,
             byte.MaxValue,
             0,
             CONSTANTS.FIVE_BIT_MASK);
 
-        var g = MathEx.ScaleRange<byte, byte>(
+        var g = MathEx.ScaleRangeByteOptimized(
             color.Green,
             0,
             byte.MaxValue,
             0,
             CONSTANTS.SIX_BIT_MASK);
 
-        var b = MathEx.ScaleRange<byte, byte>(
+        var b = MathEx.ScaleRangeByteOptimized(
             color.Blue,
             0,
             byte.MaxValue,

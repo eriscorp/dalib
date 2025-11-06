@@ -61,6 +61,19 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
     public MpfHeaderType HeaderType { get; set; }
 
     /// <summary>
+    ///     The number of frames in the standing animation including optional frames. If your normal standing animation has 4
+    ///     frames, but there are 2 extra frames that should occasionally be played, then you would put 6 here. (4 normal
+    ///     frames + 2 optional frames)
+    /// </summary>
+    public byte OptionalAnimationFrameCount { get; set; }
+
+    /// <summary>
+    ///     Specifies the ratio of playing the optional standing frames. For example, if this is set to 50, it will play the
+    ///     optional frames 50% of the time
+    /// </summary>
+    public byte OptionalAnimationRatio { get; set; }
+
+    /// <summary>
     ///     The palette number used to colorize this image
     /// </summary>
     public int PaletteNumber { get; set; }
@@ -76,7 +89,7 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
     public short PixelWidth { get; set; }
 
     /// <summary>
-    ///     The number of frames for the standing animation
+    ///     The number of frames for the standing animation without the optional frames
     /// </summary>
     public byte StandingFrameCount { get; set; }
 
@@ -84,21 +97,6 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
     ///     The starting frame index of the standing animation
     /// </summary>
     public byte StandingFrameIndex { get; set; }
-
-    /// <summary>
-    ///     Specifies the ratio of switching to other frames from the frames designated in StopMotionFrameCount. For example,
-    ///     if you set this to 10 for a guy spinning nunchucks, about once every 10 times, he hits his own head. (about once
-    ///     every 10 times the client will play the StopMotion frames)
-    /// </summary>
-    public byte StopMotionFailureRatio { get; set; }
-
-    /// <summary>
-    ///     Number of frames in the stationary action (For example, a guy continuously spinning nunchucks would need two frames
-    ///     for the spinning action, so it should be written as 2) Usually, it should be written as 0. If it's written as 0, it
-    ///     continuously repeats the entire action frame and if it's a number other than 0, it repeats only that many frames
-    ///     and occasionally animates with the remaining frames.
-    /// </summary>
-    public byte StopMotionFrameCount { get; set; }
 
     /// <summary>
     ///     Unknown header bytes at the beginning of the file. Only used if HeaderType is set to Unknown
@@ -195,8 +193,8 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
             case MpfFormatType.MultipleAttacks:
                 StandingFrameIndex = reader.ReadByte();
                 StandingFrameCount = reader.ReadByte();
-                StopMotionFrameCount = reader.ReadByte();
-                StopMotionFailureRatio = reader.ReadByte();
+                OptionalAnimationFrameCount = reader.ReadByte();
+                OptionalAnimationRatio = reader.ReadByte();
                 AttackFrameIndex = reader.ReadByte();
                 AttackFrameCount = reader.ReadByte();
                 Attack2StartIndex = reader.ReadByte();
@@ -212,8 +210,8 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
                 AttackFrameCount = reader.ReadByte();
                 StandingFrameIndex = reader.ReadByte();
                 StandingFrameCount = reader.ReadByte();
-                StopMotionFrameCount = reader.ReadByte();
-                StopMotionFailureRatio = reader.ReadByte();
+                OptionalAnimationFrameCount = reader.ReadByte();
+                OptionalAnimationRatio = reader.ReadByte();
 
                 break;
         }
@@ -307,8 +305,8 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
             writer.Write((short)FormatType);
             writer.Write(StandingFrameIndex);
             writer.Write(StandingFrameCount);
-            writer.Write(StopMotionFrameCount);
-            writer.Write(StopMotionFailureRatio);
+            writer.Write(OptionalAnimationFrameCount);
+            writer.Write(OptionalAnimationRatio);
             writer.Write(AttackFrameIndex);
             writer.Write(AttackFrameCount);
             writer.Write(Attack2StartIndex);
@@ -321,8 +319,8 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
             writer.Write(AttackFrameCount);
             writer.Write(StandingFrameIndex);
             writer.Write(StandingFrameCount);
-            writer.Write(StopMotionFrameCount);
-            writer.Write(StopMotionFailureRatio);
+            writer.Write(OptionalAnimationFrameCount);
+            writer.Write(OptionalAnimationRatio);
         }
 
         var startAddress = 0;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using DALib.Extensions;
 
 namespace DALib.Utility;
 
@@ -40,25 +41,26 @@ public static class MathEx
         T2 newMax) where T1: INumber<T1>
                    where T2: INumber<T2>
     {
-        var ret = ScaleRange(
-            double.CreateTruncating(num),
-            double.CreateTruncating(min),
-            double.CreateTruncating(max),
-            double.CreateTruncating(newMin),
-            double.CreateTruncating(newMax));
+        if (min.Equals(max))
+            throw new ArgumentOutOfRangeException(nameof(min), "Min and max cannot be the same value");
 
-        //get a rounded value and a truncated value
-        var roundedValue = Math.Round(ret, MidpointRounding.AwayFromZero);
-        var truncatedValue = T2.CreateTruncating(ret);
+        // Compute the ratio as double for higher precision
+        var ratio = double.CreateChecked(num - min) / double.CreateChecked(max - min);
 
-        //take whichever value is closer to the true value
-        var roundedDiff = Math.Abs(roundedValue - ret);
-        var truncatedDiff = Math.Abs(double.CreateTruncating(truncatedValue) - ret);
+        // Compute the scaled value
+        var scaledValue = ratio * double.CreateChecked(newMax - newMin) + double.CreateChecked(newMin);
 
-        if (roundedDiff < truncatedDiff)
-            return T2.CreateTruncating(roundedValue);
+        // Determine if T2 is an integer type
+        if (NumberExtensions<T2>.IsIntegerType)
+        {
+            // Round the scaled value to the nearest integer
+            var roundedValue = Math.Round(scaledValue, MidpointRounding.AwayFromZero);
 
-        return truncatedValue;
+            return T2.CreateChecked(roundedValue);
+        }
+
+        // For floating-point types, return the scaled value directly
+        return T2.CreateChecked(scaledValue);
     }
 
     /// <summary>
@@ -85,16 +87,20 @@ public static class MathEx
     /// <remarks>
     ///     This method assumes that the input number is within the original range. No clamping or checking is performed.
     /// </remarks>
-    public static double ScaleRange(
-        double num,
-        double min,
-        double max,
-        double newMin,
-        double newMax)
+    public static byte ScaleRangeByteOptimized(
+        byte num,
+        byte min,
+        byte max,
+        byte newMin,
+        byte newMax)
     {
-        if (min.Equals(max))
+        if (min == max)
             throw new ArgumentOutOfRangeException(nameof(min), "Min and max cannot be the same value");
 
-        return (newMax - newMin) * (num - min) / (max - min) + newMin;
+        // Cast to float (or double) to avoid truncation
+        var ratio = (float)(num - min) / (max - min);
+        var newValue = (newMax - newMin) * ratio + newMin;
+
+        return (byte)Math.Round(newValue);
     }
 }
