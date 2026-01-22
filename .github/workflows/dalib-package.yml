@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: dotnet restore
       - name: run tests
-        run: cd tests && dotnet test --no-restore --verbosity normal && dotnet pack
+        run: dotnet test --no-restore --verbosity normal
       - run: mkdir ${GITHUB_WORKSPACE}/signed; mkdir ${GITHUB_WORKSPACE}/packages
       - name: Make nuget package
         run: dotnet pack -o ${GITHUB_WORKSPACE}/packages
