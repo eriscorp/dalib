@@ -28,7 +28,7 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release --no-restore
       - name: run tests
-        run: cd tests && dotnet publish && dotnet test --no-restore --verbosity normal
+        run: dotnet test --no-restore --verbosity normal
       - name: Discord notification
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
