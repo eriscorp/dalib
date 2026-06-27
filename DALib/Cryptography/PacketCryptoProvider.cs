@@ -7,6 +7,9 @@ namespace DALib.Cryptography;
 /// <summary>
 ///     Provides cryptographic services for packets.
 /// </summary>
+[Obsolete(
+    "Superseded by the DALib.Networking packet layer (DALib.Networking.Crypto.CryptoState and " +
+    "DALib.Networking.Wire.PacketCodec). This type will be removed in a future major version.")]
 public class PacketCryptoProvider
 {
     private const int MAXIMUM_SEED = 9;

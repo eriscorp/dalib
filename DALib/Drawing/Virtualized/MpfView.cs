@@ -203,10 +203,15 @@ public sealed class MpfView
         switch (headerType)
         {
             case MpfHeaderType.Unknown:
-                var num = reader.ReadInt32();
+                var flags = reader.ReadInt32();
 
-                if (num == 4)
-                    stream.Seek(8, SeekOrigin.Current);
+                //if bit 2 is set, a u32 count follows, then count * 4 bytes to skip over (client 0x50f490)
+                if ((flags & 4) != 0)
+                {
+                    var count = reader.ReadInt32();
+
+                    stream.Seek(count * 4, SeekOrigin.Current);
+                }
 
                 break;
             default:

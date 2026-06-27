@@ -222,18 +222,24 @@ public sealed class MpfFile : Collection<MpfFrame>, ISavable
         switch (HeaderType)
         {
             case MpfHeaderType.Unknown:
-                //read 4 bytes
+                //read the 4-byte flags field
                 var headerBytes = reader.ReadBytes(4);
 
                 //convert those bytes to a number
-                var num = BitConverter.ToInt32(headerBytes);
+                var flags = BitConverter.ToInt32(headerBytes);
 
-                //if they equal "4", read 8 more bytes into the header
-                if (num == 4)
+                //if bit 2 is set, a u32 count follows, then count * 4 bytes of (mostly unknown) data. the
+                //client (0x50f490) keeps only the first min(count, 4) words but consumes the whole run; we
+                //store all of it verbatim so Save round-trips it.
+                if ((flags & 4) != 0)
                 {
-                    var moreBytes = reader.ReadBytes(8);
+                    var countBytes = reader.ReadBytes(4);
+                    var count = BitConverter.ToInt32(countBytes);
 
-                    headerBytes = headerBytes.Concat(moreBytes)
+                    var moreBytes = reader.ReadBytes(count * 4);
+
+                    headerBytes = headerBytes.Concat(countBytes)
+                                             .Concat(moreBytes)
                                              .ToArray();
                 }
 

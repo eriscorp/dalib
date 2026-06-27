@@ -14,9 +14,6 @@ public sealed class Palettized<T> : IDisposable
     /// <summary>
     ///     The entity with which the palette is associated.
     /// </summary>
-    /// <typeparam name="T">
-    ///     The type of the Entity.
-    /// </typeparam>
     public required T Entity { get; init; }
 
     /// <summary>
