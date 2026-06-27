@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DALib.Enums;
 using DALib.Networking.Wire;
 
 namespace DALib.Networking.Packets.Server;

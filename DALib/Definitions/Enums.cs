@@ -23,45 +23,6 @@ public enum Endianness
 }
 
 /// <summary>
-///     A cardinal facing direction. The byte values match the DOOMVAS wire encoding used by
-///     movement packets (0x06 Walk, 0x11 Turn) and by object-facing fields, and are identical
-///     to the ecosystem's Hybrasyl.Xml <c>Direction</c> enum.
-/// </summary>
-public enum Direction : byte
-{
-    /// <summary>Facing up / toward the top of the map.</summary>
-    North = 0,
-
-    /// <summary>Facing right.</summary>
-    East = 1,
-
-    /// <summary>Facing down / toward the bottom of the map.</summary>
-    South = 2,
-
-    /// <summary>Facing left.</summary>
-    West = 3
-}
-
-/// <summary>
-///     Character gender. The byte values match the DOOMVAS wire encoding (character creation
-///     0x04 sends 1 = Male, 2 = Female) and are identical to the ecosystem's Hybrasyl.Xml
-///     <c>Gender</c> enum. <see cref="Neutral" /> (0) is the genderless default used by item
-///     restrictions and unset appearances; the character-creation client only ever emits
-///     <see cref="Male" /> or <see cref="Female" />.
-/// </summary>
-public enum Gender : byte
-{
-    /// <summary>Genderless / unset. The zero default; not emitted by character creation.</summary>
-    Neutral = 0,
-
-    /// <summary>Male.</summary>
-    Male = 1,
-
-    /// <summary>Female.</summary>
-    Female = 2
-}
-
-/// <summary>
 ///     Represents the different blend modes used by EFA files. All EFA rendering operates in RGB555
 /// </summary>
 public enum EfaBlendingType : byte

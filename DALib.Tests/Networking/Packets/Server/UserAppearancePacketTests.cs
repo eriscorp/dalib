@@ -1,4 +1,4 @@
-using DALib.Definitions;
+using DALib.Enums;
 using DALib.Networking.Crypto;
 using DALib.Networking.Packets.Server;
 using DALib.Networking.Wire;
