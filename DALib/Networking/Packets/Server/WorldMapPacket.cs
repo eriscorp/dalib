@@ -7,7 +7,7 @@ namespace DALib.Networking.Packets.Server;
 /// <summary>
 ///     0x2E (S->C) - opens the world-map (field-map) screen: a background image plus a set of
 ///     clickable nodes that warp the player. The body is
-///     <c>[string8 FieldName][u8 NodeCount][u8 ImageIndex]</c> followed by <see cref="NodeCount" />
+///     <c>[string8 FieldName][u8 NodeCount][u8 ImageIndex]</c> followed by <c>NodeCount</c>
 ///     nodes (see <see cref="WorldMapNode" />). Clicking a node sends C->S 0x3F
 ///     <c>MapPointClick</c>.
 /// </summary>
