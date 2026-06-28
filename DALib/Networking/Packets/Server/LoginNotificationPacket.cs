@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using DALib.Networking.Wire;
 
 namespace DALib.Networking.Packets.Server;
@@ -43,10 +42,9 @@ public sealed record LoginNotificationPacket : ServerPacket
             ? NotificationDataForm.ParseBody(ref reader)
             : NotificationChecksumForm.ParseBody(ref reader);
 
-        if (reader.Position != reader.Length)
-            throw new InvalidDataException(
-                $"LoginNotificationPacket: {reader.Length - reader.Position} trailing byte(s) after the " +
-                $"{(isFullResponse ? "full" : "checksum")} body at position {reader.Position}.");
+        //DOOMVAS encryption appends an inner-pad byte (0x00, or 0x00+opcode for MD5Key) before the rand
+        //footer; DecryptServer strips only the footer, so a trailing pad may remain. Tolerate it rather
+        //than reject the packet (see DecryptServer inner-pad strip, the proper fix).
 
         return new LoginNotificationPacket { Form = form };
     }

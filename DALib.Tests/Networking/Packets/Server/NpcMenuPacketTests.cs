@@ -433,15 +433,16 @@ public class NpcMenuPacketTests
     }
 
     [Fact]
-    public void Parse_TrailingBytes_Throws()
+    public void Parse_TrailingBytes_Tolerated()
     {
-        // A TextEntry body is exactly 2 bytes; append a stray byte and parsing must reject it.
+        // DOOMVAS encryption leaves an inner-pad byte after the body (DecryptServer strips only the rand
+        // footer); parsing must tolerate a trailing byte rather than reject the packet.
         var body = new NpcMenuPacket { MenuType = NpcMenuType.TextEntry, Menu = new TextEntryMenu { PursuitId = 1 } }.ToBody();
-        var corrupted = new byte[body.Length + 1];
-        body.CopyTo(corrupted, 0);
+        var padded = new byte[body.Length + 1];
+        body.CopyTo(padded, 0);
 
-        var act = () => NpcMenuPacket.Parse(corrupted);
-        act.Should().Throw<InvalidDataException>();
+        var parsed = NpcMenuPacket.Parse(padded);
+        parsed.MenuType.Should().Be(NpcMenuType.TextEntry);
     }
 
     [Fact]
