@@ -13,8 +13,11 @@ namespace DALib.Networking.Packets.Client;
 ///     <list type="bullet">
 ///         <item><description><strong>1 - entity:</strong> <c>[u32 BE TargetId]</c>, the clicked
 ///         object's serial.</description></item>
-///         <item><description><strong>3 - point:</strong> <c>[u16 BE X][u16 BE Y]</c>, the clicked
-///         tile (used for doors and signposts).</description></item>
+///         <item><description><strong>3 - point:</strong> <c>[u16 BE X][u16 BE Y][u8 Flag]</c>, the
+///         clicked tile (used for doors and signposts). The trailing flag is the clicked sprite's
+///         vertical-anchor: <c>0</c> = above-tile sprite (door panel, awning), <c>1</c> = floor-aligned
+///         sprite (door frame, signpost, ground item). Retail always emits it (send length 7);
+///         see comhaigne <c>docs/protocol/client/0x43-point-click.md</c> (USDA RE 2026-04-29).</description></item>
 ///     </list>
 ///     Use the static factories.
 /// </remarks>
@@ -39,6 +42,13 @@ public sealed record ClickPacket : ClientPacket
     /// <summary>Y of the clicked tile; set only when <see cref="ClickType" /> is 3.</summary>
     public ushort? Y { get; init; }
 
+    /// <summary>
+    ///     Vertical-anchor flag of the clicked sprite; set only when <see cref="ClickType" /> is 3.
+    ///     <c>0</c> = above-tile sprite (door panel, awning), <c>1</c> = floor-aligned sprite (door
+    ///     frame, signpost, ground item).
+    /// </summary>
+    public byte? Flag { get; init; }
+
     /// <inheritdoc />
     public override byte Opcode => (byte)ClientOpcode.Click;
 
@@ -46,9 +56,12 @@ public sealed record ClickPacket : ClientPacket
     public static ClickPacket Entity(uint targetId) =>
         new() { ClickType = ClickTypeEntity, TargetId = targetId };
 
-    /// <summary>Builds a tile click at (<paramref name="x" />, <paramref name="y" />).</summary>
-    public static ClickPacket Point(ushort x, ushort y) =>
-        new() { ClickType = ClickTypePoint, X = x, Y = y };
+    /// <summary>
+    ///     Builds a tile click at (<paramref name="x" />, <paramref name="y" />) carrying the clicked
+    ///     sprite's anchor <paramref name="flag" /> (0 = above-tile, 1 = floor-aligned).
+    /// </summary>
+    public static ClickPacket Point(ushort x, ushort y, byte flag) =>
+        new() { ClickType = ClickTypePoint, X = x, Y = y, Flag = flag };
 
     /// <inheritdoc />
     public override void WriteBody(IPacketWriter writer)
@@ -65,11 +78,12 @@ public sealed record ClickPacket : ClientPacket
                 break;
 
             case ClickTypePoint:
-                if (X is null || Y is null)
+                if (X is null || Y is null || Flag is null)
                     throw new InvalidOperationException(
-                        $"{nameof(ClickPacket)} with {nameof(ClickType)}=3 requires non-null {nameof(X)} and {nameof(Y)}.");
+                        $"{nameof(ClickPacket)} with {nameof(ClickType)}=3 requires non-null {nameof(X)}, {nameof(Y)}, and {nameof(Flag)}.");
                 writer.WriteUInt16(X.Value);
                 writer.WriteUInt16(Y.Value);
+                writer.WriteByte(Flag.Value);
                 break;
 
             default:
@@ -85,12 +99,21 @@ public sealed record ClickPacket : ClientPacket
 
         var clickType = reader.ReadByte();
 
-        return clickType switch
+        switch (clickType)
         {
-            ClickTypeEntity => new ClickPacket { ClickType = clickType, TargetId = reader.ReadUInt32() },
-            ClickTypePoint => new ClickPacket { ClickType = clickType, X = reader.ReadUInt16(), Y = reader.ReadUInt16() },
-            _ => throw new InvalidDataException(
-                $"{nameof(ClickPacket)}: unknown click type 0x{clickType:X2}."),
-        };
+            case ClickTypeEntity:
+                return new ClickPacket { ClickType = clickType, TargetId = reader.ReadUInt32() };
+
+            case ClickTypePoint:
+                var x = reader.ReadUInt16();
+                var y = reader.ReadUInt16();
+                // Retail always sends the trailing anchor flag (7-byte send); tolerate its absence.
+                byte? flag = reader.Position < reader.Length ? reader.ReadByte() : null;
+                return new ClickPacket { ClickType = clickType, X = x, Y = y, Flag = flag };
+
+            default:
+                throw new InvalidDataException(
+                    $"{nameof(ClickPacket)}: unknown click type 0x{clickType:X2}.");
+        }
     }
 }
