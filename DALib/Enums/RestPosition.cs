@@ -5,7 +5,7 @@ namespace DALib.Enums;
 /// </summary>
 public enum RestPosition : byte
 {
-    /// <summary>Standing — not resting.</summary>
+    /// <summary>Standing - not resting.</summary>
     None = 0,
 
     /// <summary>Kneeling.</summary>

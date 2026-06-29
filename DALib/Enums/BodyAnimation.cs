@@ -2,7 +2,7 @@ namespace DALib.Enums;
 
 /// <summary>
 ///     Body animation / emote identifier. Byte values match the retail wire encoding.
-///     0–44 are emotes/expressions; 128+ are combat and casting animations. Gaps are
+///     0-44 are emotes/expressions; 128+ are combat and casting animations. Gaps are
 ///     intentional (unused IDs in the retail set).
 /// </summary>
 #pragma warning disable CS1591 // self-evident emote/animation names; per-member docs would be noise

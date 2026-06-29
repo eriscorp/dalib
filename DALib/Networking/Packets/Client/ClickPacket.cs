@@ -16,8 +16,7 @@ namespace DALib.Networking.Packets.Client;
 ///         <item><description><strong>3 - point:</strong> <c>[u16 BE X][u16 BE Y][u8 Flag]</c>, the
 ///         clicked tile (used for doors and signposts). The trailing flag is the clicked sprite's
 ///         vertical-anchor: <c>0</c> = above-tile sprite (door panel, awning), <c>1</c> = floor-aligned
-///         sprite (door frame, signpost, ground item). Retail always emits it (send length 7);
-///         see comhaigne <c>docs/protocol/client/0x43-point-click.md</c> (USDA RE 2026-04-29).</description></item>
+///         sprite (door frame, signpost, ground item). Retail always emits it (send length 7).</description></item>
 ///     </list>
 ///     Use the static factories.
 /// </remarks>

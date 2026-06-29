@@ -2,9 +2,8 @@ namespace DALib.Enums;
 
 /// <summary>
 ///     Dye / display color index (hair, item, and name-tag coloring). Byte values are
-///     the retail dye-palette indices; the labels follow the Hybrasyl ecosystem's
-///     <c>ItemColor</c> naming. The byte→physical-color mapping is fixed by the retail
-///     palette — names are a labeling choice over that fixed mapping.
+///     the retail dye-palette indices. The byte-to-color mapping is fixed by the retail
+///     palette - names are a labeling choice over that fixed mapping.
 /// </summary>
 #pragma warning disable CS1591 // self-evident dye-index names; per-member docs would be noise
 public enum DisplayColor : byte

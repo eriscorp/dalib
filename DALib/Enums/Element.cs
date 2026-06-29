@@ -1,10 +1,7 @@
 namespace DALib.Enums;
 
 /// <summary>
-///     Offensive / defensive element. Byte values are the retail DOOMVAS wire encoding,
-///     and the labels are retail-canonical (verified against the <c>Darkages.exe</c>
-///     element name table) - retail uses <see cref="Light" />/<see cref="Dark" /> (not
-///     Holy/Darkness) and <see cref="Undead" /> at 9.
+///     Offensive / defensive element. Byte values are the DOOMVAS wire encoding.
 /// </summary>
 public enum Element : byte
 {
@@ -23,10 +20,10 @@ public enum Element : byte
     /// <summary>Earth.</summary>
     Earth = 4,
 
-    /// <summary>Light (retail label; Chaos calls this Holy).</summary>
+    /// <summary>Light.</summary>
     Light = 5,
 
-    /// <summary>Dark (retail label; Chaos calls this Darkness).</summary>
+    /// <summary>Dark.</summary>
     Dark = 6,
 
     /// <summary>Wood.</summary>

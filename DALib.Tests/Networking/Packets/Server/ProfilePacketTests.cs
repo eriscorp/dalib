@@ -176,7 +176,7 @@ public class ProfilePacketTests
                 .Select((slot, i) => new ProfileEquipmentSlot(slot, (ushort)(0x100 + i), (byte)i))
                 .ToList(),
             SocialStatus = SocialStatus.LoneHunter,
-            Name = "Comhaigne",
+            Name = "Niall",
             NationFlag = 1,
             Title = "Wanderer",
             GroupOpen = true,

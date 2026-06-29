@@ -13,7 +13,7 @@ namespace DALib.Networking.Packets.Server;
 ///     <para>
 ///         Body: <c>[u16 totalAllShards][u16 shardCount]</c> then, for each listed user,
 ///         <c>[u8 Class][u8 Color][u8 SocialStatus][string8 Title][bool IsMaster][string8 Name]</c>.
-///         The first count is the total online across all server shards (USDA: Temuair + Medenia); the
+///         The first count is the total online across all server shards (e.g. Temuair, Medenia); the
 ///         second is the count on the current shard and equals the rows that follow. <see cref="Parse" />
 ///         uses the second.
 ///     </para>
@@ -61,7 +61,7 @@ public sealed record UserListPacket : ServerPacket
     {
         var reader = new PacketReader(body);
 
-        // Two counts: the first is the total online across all server shards (USDA: Temuair + Medenia),
+        // Two counts: the first is the total online across all server shards (e.g. Temuair, Medenia),
         // the second is the count on the current shard, which equals the rows that follow. Use the second.
         _ = reader.ReadUInt16();
         var count = reader.ReadUInt16();
