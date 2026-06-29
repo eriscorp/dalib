@@ -271,7 +271,11 @@ public static class CRC32
     /// <param name="buffer">
     ///     The buffer to calculate the checksum of
     /// </param>
-    public static uint Calculate(byte[] buffer) => Calculate(buffer, 0, buffer.Length);
+    /// <param name="finalXor">
+    ///     Apply the standard final inversion (zlib/PNG CRC-32). The Dark Ages wire protocol
+    ///     omits it -- pass <c>false</c> for metafile/notice/server-table checksums.
+    /// </param>
+    public static uint Calculate(byte[] buffer, bool finalXor = true) => Calculate(buffer, 0, buffer.Length, finalXor);
 
     /// <summary>
     ///     Calculates the 32bit checksum of the specified buffer
@@ -285,13 +289,17 @@ public static class CRC32
     /// <param name="count">
     ///     The number of bytes within the buffer to calculate for
     /// </param>
-    public static uint Calculate(byte[] buffer, int offset, int count)
+    /// <param name="finalXor">
+    ///     Apply the standard final inversion (zlib/PNG CRC-32). The Dark Ages wire protocol
+    ///     omits it -- pass <c>false</c> for metafile/notice/server-table checksums.
+    /// </param>
+    public static uint Calculate(byte[] buffer, int offset, int count, bool finalXor = true)
     {
         var result = 0xFFFFFFFF;
 
         for (var i = 0; i < count; ++i)
             result = CRC32_TABLE[buffer[offset + i] ^ (result & 0xFF)] ^ (result >> 8);
 
-        return ~result;
+        return finalXor ? ~result : result;
     }
 }
