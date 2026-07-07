@@ -2,12 +2,12 @@
     <PropertyGroup>
         <!--suppress MsbuildTargetFrameworkTagInspection -->
         <PackageId>DALib</PackageId>
-        <PackageVersion>1.0.0-alpha1</PackageVersion>
+        <PackageVersion>1.0.0-alpha2</PackageVersion>
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageIcon>hybrasyl-512x512.png</PackageIcon>
         <ProjectUrl>https://github.com/eriscorp/dalib</ProjectUrl>
-        <Version>1.0.0-alpha1</Version>
+        <Version>1.0.0-alpha2</Version>
         <IncludeSymbols>true</IncludeSymbols>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
         <Authors>Kyle Speck and contributors</Authors>

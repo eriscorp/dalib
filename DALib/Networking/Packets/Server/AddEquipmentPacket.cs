@@ -1,4 +1,5 @@
 using System;
+using DALib.Enums;
 using DALib.Networking.Wire;
 
 namespace DALib.Networking.Packets.Server;

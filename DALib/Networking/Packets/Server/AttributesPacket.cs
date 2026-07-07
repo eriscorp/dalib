@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using DALib.Networking.Wire;
 
 namespace DALib.Networking.Packets.Server;
@@ -128,10 +127,9 @@ public sealed record AttributesPacket : ServerPacket
         if ((flag & FlagSecondary) != 0)
             packet.Secondary = SecondaryAttributes.Parse(ref reader);
 
-        if (reader.Position != reader.Length)
-            throw new InvalidDataException(
-                $"AttributesPacket: {reader.Length - reader.Position} trailing byte(s) " +
-                $"after sections at position {reader.Position} (flag=0x{flag:X2}).");
+        //DOOMVAS encryption appends an inner-pad byte (0x00, or 0x00+opcode for MD5Key) before the rand
+        //footer; DecryptServer strips only the footer, so a trailing pad may remain. Tolerate it rather
+        //than reject the packet (see DecryptServer inner-pad strip, the proper fix).
 
         return packet;
     }

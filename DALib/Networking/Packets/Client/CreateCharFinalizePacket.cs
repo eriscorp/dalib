@@ -1,5 +1,5 @@
 using System;
-using DALib.Definitions;
+using DALib.Enums;
 using DALib.Networking.Wire;
 
 namespace DALib.Networking.Packets.Client;
@@ -11,7 +11,7 @@ namespace DALib.Networking.Packets.Client;
 /// </summary>
 /// <remarks>
 ///     <see cref="Gender" /> is <c>1 = Male</c>, <c>2 = Female</c> on the wire; creation only ever
-///     emits those two. It is modeled as the categorical <see cref="DALib.Definitions.Gender" />
+///     emits those two. It is modeled as the categorical <see cref="DALib.Enums.Gender" />
 ///     enum (which also carries <c>Neutral = 0</c>, the genderless default used elsewhere) to keep
 ///     arbitrary byte values off the wire. <see cref="HairStyle" /> and <see cref="HairColor" /> are
 ///     sprite-table indices, so they stay bytes. Values are written faithfully and not clamped; the

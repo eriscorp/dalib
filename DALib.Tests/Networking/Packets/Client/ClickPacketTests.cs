@@ -31,15 +31,16 @@ public class ClickPacketTests
     }
 
     [Fact]
-    public void WriteBody_Point_PinsTypeThenCoords()
+    public void WriteBody_Point_PinsTypeThenCoordsThenFlag()
     {
-        var packet = ClickPacket.Point(0x1234, 0xABCD);
+        var packet = ClickPacket.Point(0x1234, 0xABCD, 0x01);
 
-        // [03] point [12 34] u16-BE x [AB CD] u16-BE y
+        // [03] point [12 34] u16-BE x [AB CD] u16-BE y [01] u8 anchor flag (floor-aligned)
         packet.ToBody().Should().Equal(
             (byte)0x03,
             (byte)0x12, (byte)0x34,
-            (byte)0xAB, (byte)0xCD);
+            (byte)0xAB, (byte)0xCD,
+            (byte)0x01);
     }
 
     [Fact]
@@ -64,7 +65,7 @@ public class ClickPacketTests
     {
         var codec = new PacketCodec();
         var crypto = MakeCrypto();
-        var original = ClickPacket.Point(10, 11);
+        var original = ClickPacket.Point(10, 11, 0);
 
         var wire = codec.EncodeClient(original, crypto);
         var parsed = codec.ParseClientPacket(wire, crypto);
@@ -73,7 +74,30 @@ public class ClickPacketTests
         typed.ClickType.Should().Be(ClickPacket.ClickTypePoint);
         typed.X.Should().Be((ushort)10);
         typed.Y.Should().Be((ushort)11);
+        typed.Flag.Should().Be((byte)0);
         typed.TargetId.Should().BeNull();
+    }
+
+    [Fact]
+    public void Parse_PointWithoutFlag_ToleratesMissingTrailingByte()
+    {
+        // A 5-byte point body (no trailing anchor flag) still parses; Flag is null.
+        var parsed = ClickPacket.Parse([0x03, 0x00, 0x0A, 0x00, 0x0B]);
+
+        parsed.ClickType.Should().Be(ClickPacket.ClickTypePoint);
+        parsed.X.Should().Be((ushort)10);
+        parsed.Y.Should().Be((ushort)11);
+        parsed.Flag.Should().BeNull();
+    }
+
+    [Fact]
+    public void WriteBody_PointWithNullFlag_Throws()
+    {
+        var packet = new ClickPacket { ClickType = ClickPacket.ClickTypePoint, X = 1, Y = 2, Flag = null };
+
+        var act = () => packet.ToBody();
+
+        act.Should().Throw<InvalidOperationException>();
     }
 
     [Fact]

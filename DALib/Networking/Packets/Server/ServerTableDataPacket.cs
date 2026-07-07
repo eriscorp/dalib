@@ -53,8 +53,9 @@ public sealed record ServerTableDataPacket : ServerPacket
     }
 
     /// <summary>
-    ///     Parses a 0x56 body - reads the compressed-length prefix, inflates the zlib stream,
-    ///     then unpacks the server entries.
+    ///     Parses a 0x56 body - reads the compressed-length prefix, inflates the DEFLATE payload
+    ///     (see <see cref="Decompress" /> for why the Adler-32 trailer is not validated), then
+    ///     unpacks the server entries.
     /// </summary>
     public static ServerTableDataPacket Parse(ReadOnlySpan<byte> body)
     {
@@ -115,10 +116,28 @@ public sealed record ServerTableDataPacket : ServerPacket
         return output.ToArray();
     }
 
+    // A zlib stream is [2-byte header][raw DEFLATE][4-byte Adler-32 trailer]. We inflate the
+    // DEFLATE body directly rather than validating the full zlib envelope: some DOOMVAS servers
+    // emit a bogus Adler-32 (e.g. Hybrasyl computes it over an empty buffer, always writing
+    // 0x00000001), and the retail client - like the servers' own decompressors - never checks it.
+    // Validating here would reject an otherwise-decodable table, so we match the ecosystem and skip
+    // the trailer. Compress still writes a correct zlib stream, so this stays round-trip clean.
+    private const int ZlibHeaderLength = 2;
+    private const int Adler32TrailerLength = 4;
+
     private static byte[] Decompress(ReadOnlySpan<byte> compressed)
     {
-        using var input = new MemoryStream(compressed.ToArray(), writable: false);
-        using var inflater = new ZLibStream(input, CompressionMode.Decompress);
+        if (compressed.Length < ZlibHeaderLength + Adler32TrailerLength)
+            throw new InvalidDataException(
+                $"ServerTableData: compressed payload is {compressed.Length} bytes, too short to be a "
+                + "zlib stream (2-byte header + 4-byte trailer).");
+
+        var deflateBody = compressed.Slice(
+            ZlibHeaderLength,
+            compressed.Length - ZlibHeaderLength - Adler32TrailerLength);
+
+        using var input = new MemoryStream(deflateBody.ToArray(), writable: false);
+        using var inflater = new DeflateStream(input, CompressionMode.Decompress);
         using var output = new MemoryStream();
 
         inflater.CopyTo(output);

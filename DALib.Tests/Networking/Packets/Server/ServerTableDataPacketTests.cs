@@ -170,6 +170,33 @@ public class ServerTableDataPacketTests
     }
 
     [Fact]
+    public void Parse_ToleratesBrokenAdler32Trailer()
+    {
+        // Regression: Hybrasyl's server-table compressor writes the Adler-32 over an empty buffer
+        // (it checksums before seeking the stream to 0), so the trailer is always 0x00000001 - the
+        // Adler-32 of no bytes - regardless of the real payload. The DEFLATE body is correct. The
+        // retail client and Hybrasyl's own decompressor never validate the trailer; Parse must not
+        // either. Bytes below are the decrypted 0x56 body captured live from production.hybrasyl.com.
+        byte[] body =
+        [
+            0x00, 0x26,                                     // u16 BE compressed length = 38
+            0x78, 0x9c,                                     // zlib header
+            0x63, 0x64, 0x64, 0x60, 0x60, 0x60, 0xe0, 0x32, // DEFLATE body ...
+            0xf6, 0xa8, 0x4c, 0x2a, 0x4a, 0x2c, 0xae, 0xcc,
+            0xb1, 0x86, 0x31, 0x14, 0x02, 0x8a, 0xf2, 0x53,
+            0x4a, 0x93, 0x4b, 0x32, 0xf3, 0xf3, 0x18, 0x00,
+            0x00, 0x00, 0x00, 0x01,                         // Adler-32 trailer = 1 (broken: adler of "")
+        ];
+
+        var parsed = ServerTableDataPacket.Parse(body);
+
+        parsed.Servers.Should().ContainSingle();
+        parsed.Servers[0].Id.Should().Be(1);
+        parsed.Servers[0].Port.Should().Be(2611);
+        parsed.Servers[0].Name.Should().Be("Hybrasyl;Hybrasyl Production");
+    }
+
+    [Fact]
     public void Parse_PreservesIPv4AddressFamily()
     {
         var original = new ServerTableDataPacket

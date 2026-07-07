@@ -1,8 +1,8 @@
-namespace DALib.Networking.Packets.Server;
+namespace DALib.Enums;
 
 /// <summary>
-///     Equipment-pane slot numbering shared by S->C 0x37 <see cref="AddEquipmentPacket" /> and 0x38
-///     <see cref="RemoveEquipmentPacket" />. Slots 1-18 are valid; 0 and values >= 19 are ignored.
+///     Equipment-pane slot numbering shared by S->C 0x37 <see cref="DALib.Networking.Packets.Server.AddEquipmentPacket" /> and 0x38
+///     <see cref="DALib.Networking.Packets.Server.RemoveEquipmentPacket" />. Slots 1-18 are valid; 0 and values >= 19 are ignored.
 /// </summary>
 public enum EquipmentSlot : byte
 {

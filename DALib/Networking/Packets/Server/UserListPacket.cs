@@ -11,9 +11,11 @@ namespace DALib.Networking.Packets.Server;
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Body: <c>[u16 count][u16 count]</c> then, for each user,
+///         Body: <c>[u16 totalAllShards][u16 shardCount]</c> then, for each listed user,
 ///         <c>[u8 Class][u8 Color][u8 SocialStatus][string8 Title][bool IsMaster][string8 Name]</c>.
-///         The entry count is written twice; <see cref="Parse" /> reads both and uses the first.
+///         The first count is the total online across all server shards (e.g. Temuair, Medenia); the
+///         second is the count on the current shard and equals the rows that follow. <see cref="Parse" />
+///         uses the second.
 ///     </para>
 ///     <para>
 ///         <see cref="UserListEntry.Color" /> is a server-computed relationship indicator, not a
@@ -59,12 +61,22 @@ public sealed record UserListPacket : ServerPacket
     {
         var reader = new PacketReader(body);
 
-        var count = reader.ReadUInt16();
-        // The count is emitted twice; the second copy is the same value.
+        // Two counts: the first is the total online across all server shards (e.g. Temuair, Medenia),
+        // the second is the count on the current shard, which equals the rows that follow. Use the second.
         _ = reader.ReadUInt16();
+        var count = reader.ReadUInt16();
+
+        // Minimum entry width: class + color + status + master flag + two empty string8 length prefixes.
+        const int MinEntrySize = 6;
 
         var users = new List<UserListEntry>(count);
         for (var i = 0; i < count; i++)
+        {
+            // Defensive: never overrun if count and body disagree (the DOOMVAS inner-pad also leaves a
+            // short tail). Stop when the remaining body can't hold another entry.
+            if (reader.Length - reader.Position < MinEntrySize)
+                break;
+
             users.Add(new UserListEntry(
                 Class: reader.ReadByte(),
                 Color: reader.ReadByte(),
@@ -72,6 +84,7 @@ public sealed record UserListPacket : ServerPacket
                 Title: reader.ReadString8(),
                 IsMaster: reader.ReadBoolean(),
                 Name: reader.ReadString8()));
+        }
 
         return new UserListPacket { Users = users };
     }

@@ -40,10 +40,9 @@ public sealed record UrlPacket : ServerPacket
         var subtype = reader.ReadByte();
         var form = UrlForm.Parse(subtype, ref reader);
 
-        if (reader.Position != reader.Length)
-            throw new InvalidDataException(
-                $"UrlPacket: {reader.Length - reader.Position} trailing byte(s) after the " +
-                $"subtype-0x{subtype:X2} body at position {reader.Position}.");
+        //DOOMVAS encryption appends an inner-pad byte (0x00, or 0x00+opcode for MD5Key) before the rand
+        //footer; DecryptServer strips only the footer, so a trailing pad may remain. Tolerate it rather
+        //than reject the packet (see DecryptServer inner-pad strip, the proper fix).
 
         return new UrlPacket { Form = form };
     }
