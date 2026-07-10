@@ -8,5 +8,6 @@ Right now it supports:
 * MAP files
 * Palettes
 * Most file formats inside DATs (MPF, SPF, EPF, HPF)
+* Full networking library supporting appropriate DOOMVAS packets
 
 
