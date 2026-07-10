@@ -200,12 +200,15 @@ public sealed record CancelExchangeResponsePacket : ExchangeSidePacket
 }
 
 /// <summary>
-///     0x42 action 5 - the trade was confirmed/completed. Tail <c>[bool RightSide][string8 Message]</c>.
-///     The server chooses the message text.
+///     0x42 action 5 - a trade confirmation. Tail <c>[bool RightSide][string8 Message]</c>. The side
+///     byte has the same pane-routing meaning as actions 2-4; the server chooses the message text.
+///     Note that Hybrasyl drives the confirm flow through this value: it sends 1 when the partner
+///     has confirmed (the window stays open awaiting the local confirm) and 0 when both sides have
+///     confirmed and the exchange completes.
 /// </summary>
 public sealed record AcceptExchangeResponsePacket : ExchangeSidePacket
 {
-    /// <summary>The completion message text.</summary>
+    /// <summary>The confirmation message text.</summary>
     public required string Message { get; init; }
 
     /// <inheritdoc />

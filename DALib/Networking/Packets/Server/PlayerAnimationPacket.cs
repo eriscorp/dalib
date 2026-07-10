@@ -5,9 +5,10 @@ namespace DALib.Networking.Packets.Server;
 
 /// <summary>
 ///     0x1A (S->C) - play a body/motion animation on a creature or user (an assail swing, a bow, a
-///     greeting, etc.). The body is <c>[u32 BE SourceId][u8 Animation][u16 Speed]</c>. Distinct from
-///     0x29 <see cref="SpellAnimationPacket" />, which plays particle/spell effects rather than body
-///     motions.
+///     greeting, etc.). The body is <c>[u32 BE SourceId][u8 Animation][u16 Speed]</c>. Some servers
+///     (e.g. Hybrasyl) append a trailing slack byte the client does not read; Parse tolerates it.
+///     Distinct from 0x29 <see cref="SpellAnimationPacket" />, which plays particle/spell effects rather
+///     than body motions.
 /// </summary>
 [ServerOpcode(ServerOpcode.PlayerAnimation)]
 public sealed record PlayerAnimationPacket : ServerPacket
@@ -40,6 +41,9 @@ public sealed record PlayerAnimationPacket : ServerPacket
         var sourceId = reader.ReadUInt32();
         var animation = reader.ReadByte();
         var speed = reader.ReadUInt16();
+
+        // Any remaining bytes are emitter slack (e.g. Hybrasyl's 0xFF) or DOOMVAS inner-pad;
+        // the client does not read past Speed, so neither is modeled. Tolerated, not rejected.
 
         return new PlayerAnimationPacket
         {

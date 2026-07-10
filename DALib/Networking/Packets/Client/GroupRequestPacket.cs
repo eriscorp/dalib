@@ -5,13 +5,13 @@ using DALib.Networking.Wire;
 namespace DALib.Networking.Packets.Client;
 
 /// <summary>
-///     0x2E (C->S) - group-request multiplexer. A leading <see cref="Stage" /> byte selects one of
-///     five actions. Stages 2/3/6/7 carry a single target name; stage 4 (Groupbox) carries a full
-///     recruit-box description. Stages 1 and 5 are not used.
+///     0x2E (C->S) - group-request multiplexer. A leading <see cref="Stage" /> byte selects the
+///     action. Stages 2/3/5/6/7 carry a single target name; stage 4 (Groupbox) carries a full
+///     recruit-box description. Stage 1 is not used.
 /// </summary>
 /// <remarks>
 ///     <para>
-///         Simple form (2/3/6/7): <c>[u8 Stage][string8 Name][u8 0]</c>. The trailing zero is a
+///         Simple form (2/3/5/6/7): <c>[u8 Stage][string8 Name][u8 0]</c>. The trailing zero is a
 ///         reserved byte; it is written by <see cref="WriteBody" /> and ignored by
 ///         <see cref="Parse" />.
 ///     </para>
@@ -34,6 +34,9 @@ public sealed record GroupRequestPacket : ClientPacket
     /// <summary>Stage 4 - submit a group recruit box (the rich form).</summary>
     public const byte StageGroupbox = 4;
 
+    /// <summary>Stage 5 - request the recruit info of another player's advertised recruit box.</summary>
+    public const byte StageRecruitInfo = 5;
+
     /// <summary>Stage 6 - remove/close your own recruit box.</summary>
     public const byte StageRemoveGroupBox = 6;
 
@@ -43,7 +46,7 @@ public sealed record GroupRequestPacket : ClientPacket
     /// <summary>The action discriminator. One of the <c>Stage*</c> constants.</summary>
     public required byte Stage { get; init; }
 
-    /// <summary>The target name; set only for the simple form (stages 2/3/6/7).</summary>
+    /// <summary>The target name; set only for the simple form (stages 2/3/5/6/7).</summary>
     public string? Name { get; init; }
 
     /// <summary>The group leader's name; set only for the Groupbox form (stage 4).</summary>
@@ -86,6 +89,10 @@ public sealed record GroupRequestPacket : ClientPacket
     /// <summary>Builds a stage-3 AcceptInvite for <paramref name="name" /> (the inviter).</summary>
     public static GroupRequestPacket AcceptInvite(string name) =>
         new() { Stage = StageAcceptInvite, Name = name };
+
+    /// <summary>Builds a stage-5 RecruitInfo request for the box led by <paramref name="name" />.</summary>
+    public static GroupRequestPacket ViewRecruitInfo(string name) =>
+        new() { Stage = StageRecruitInfo, Name = name };
 
     /// <summary>Builds a stage-6 RemoveGroupBox for <paramref name="name" /> (the box owner, self).</summary>
     public static GroupRequestPacket RemoveGroupBox(string name) =>
@@ -131,6 +138,7 @@ public sealed record GroupRequestPacket : ClientPacket
         {
             case StageTryInvite:
             case StageAcceptInvite:
+            case StageRecruitInfo:
             case StageRemoveGroupBox:
             case StageRecruitJoin:
                 if (Name is null)
@@ -182,6 +190,7 @@ public sealed record GroupRequestPacket : ClientPacket
         {
             case StageTryInvite:
             case StageAcceptInvite:
+            case StageRecruitInfo:
             case StageRemoveGroupBox:
             case StageRecruitJoin:
                 // Simple form: name then a trailing reserved 0x00 (left unread, always 0).

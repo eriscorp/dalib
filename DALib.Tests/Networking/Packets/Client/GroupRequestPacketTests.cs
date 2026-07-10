@@ -7,7 +7,7 @@ using DALib.Networking.Wire;
 namespace DALib.Tests.Networking.Packets.Client;
 
 /// <summary>
-///     Coverage for 0x2E GroupRequest (C->S) - pins the simple form (stages 2/3/6/7) and the Groupbox
+///     Coverage for 0x2E GroupRequest (C->S) - pins the simple form (stages 2/3/5/6/7) and the Groupbox
 ///     form (stage 4), round-trips every stage, and rejects unknown stages.
 /// </summary>
 public class GroupRequestPacketTests
@@ -38,6 +38,18 @@ public class GroupRequestPacketTests
 
         packet.ToBody().Should().Equal(
             (byte)0x06,
+            (byte)0x06, (byte)'K', (byte)'e', (byte)'d', (byte)'i', (byte)'a', (byte)'n',
+            (byte)0x00);
+    }
+
+    [Fact]
+    public void WriteBody_ViewRecruitInfo_PinsSimpleForm()
+    {
+        // Wire bytes: 2E 05 06 "Kedian" 00 (then crypto padding).
+        var packet = GroupRequestPacket.ViewRecruitInfo("Kedian");
+
+        packet.ToBody().Should().Equal(
+            (byte)0x05,
             (byte)0x06, (byte)'K', (byte)'e', (byte)'d', (byte)'i', (byte)'a', (byte)'n',
             (byte)0x00);
     }
@@ -102,6 +114,7 @@ public class GroupRequestPacketTests
     [Theory]
     [InlineData(GroupRequestPacket.StageTryInvite)]
     [InlineData(GroupRequestPacket.StageAcceptInvite)]
+    [InlineData(GroupRequestPacket.StageRecruitInfo)]
     [InlineData(GroupRequestPacket.StageRemoveGroupBox)]
     [InlineData(GroupRequestPacket.StageRecruitJoin)]
     public void RoundTrip_SimpleStages_PreserveName(byte stage)
@@ -148,8 +161,8 @@ public class GroupRequestPacketTests
 
     [Theory]
     [InlineData((byte)0x01)] // not a recognized stage.
-    [InlineData((byte)0x05)] // gap in the enum - does not exist.
     [InlineData((byte)0x00)]
+    [InlineData((byte)0x08)]
     public void Parse_UnknownStage_Throws(byte stage)
     {
         var act = () => GroupRequestPacket.Parse([stage, 0x00]);

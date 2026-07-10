@@ -72,6 +72,26 @@ public class NpcDialogPacketTests
     }
 
     [Fact]
+    public void RoundTrip_Normal_EmptyText()
+    {
+        // Regression pin: an empty prompt writes a zero-length string16 (the length prefix is
+        // always present) and round-trips to empty, never desyncing the field order.
+        var packet = new NpcDialogPacket
+        {
+            DialogType = NpcDialogType.Normal,
+            SourceId = 1,
+            Name = "Sign",
+            Text = "",
+            Body = new TextDialog(),
+        };
+
+        var parsed = Roundtrip(packet);
+        parsed.Text.Should().BeEmpty();
+        parsed.Name.Should().Be("Sign");
+        parsed.Body.Should().BeOfType<TextDialog>();
+    }
+
+    [Fact]
     public void RoundTrip_Options_CarriesText()
     {
         var packet = new NpcDialogPacket

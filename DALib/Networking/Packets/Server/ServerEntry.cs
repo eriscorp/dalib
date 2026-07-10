@@ -7,8 +7,10 @@ namespace DALib.Networking.Packets.Server;
 ///     advertised game server.
 /// </summary>
 /// <remarks>
-///     The local <c>mServer.tbl</c> cache stores an additional description field per entry that
-///     is never delivered on the wire and is not modeled here.
+///     The wire carries a single null-terminated name cstring per entry. Some servers (for
+///     example Hybrasyl) pack a semicolon-separated <c>name;description</c> pair into that one
+///     field; this is not a universal convention, so <see cref="Name" /> holds the cstring
+///     verbatim and any splitting is left to the consumer.
 /// </remarks>
 public sealed record ServerEntry
 {
