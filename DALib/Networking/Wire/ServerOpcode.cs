@@ -231,7 +231,7 @@ public enum ServerOpcode : byte
     /// </summary>
     ConfirmExit = 0x4C,
 
-    /// <summary>0x4F - open or update a player-run shop (the employee/consignment shop window; answered by C->S 0x54).</summary>
+    /// <summary>0x4F - open or update a player-run shop (the employee/consignment shop window; answered by C->S 0x54 PlayerShopAction).</summary>
     PlayerShop = 0x4F,
 
     /// <summary>0x50 - open/page the manufacture (crafting) window (answered by C->S 0x55).</summary>

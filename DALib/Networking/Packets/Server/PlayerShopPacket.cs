@@ -12,7 +12,7 @@ namespace DALib.Networking.Packets.Server;
 ///     sealed records deriving from this base (<see cref="PlayerShopFullStatePacket" />,
 ///     <see cref="PlayerShopAddItemPacket" />, <see cref="PlayerShopRemoveItemPacket" />,
 ///     <see cref="PlayerShopUpdateItemPacket" />, <see cref="PlayerShopRenamePacket" />). Shop interactions
-///     are answered with C->S 0x54 (not yet modeled in DALib).
+///     are answered with C->S 0x54 (<see cref="DALib.Networking.Packets.Client.PlayerShopActionPacket" />).
 /// </summary>
 /// <remarks>
 ///     The gate byte is a hard-coded <c>0x01</c>; any 0x4F whose second byte is not <c>0x01</c> is dropped,

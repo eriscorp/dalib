@@ -107,6 +107,9 @@ public enum ClientOpcode : byte
     /// <summary>0x30 - swap two slots within a panel (inventory/spellbook/skillbook).</summary>
     SwapSlot = 0x30,
 
+    /// <summary>0x31 - confirm a server prompt; carries three state bytes then a length-prefixed payload. 
+    Confirm = 0x31,
+
     /// <summary>0x38 - request a refresh of the surrounding area; no body.</summary>
     Refresh = 0x38,
 
@@ -125,6 +128,9 @@ public enum ClientOpcode : byte
     /// <summary>0x3F - click a node on the world map; echoes the clicked point's four opaque handles.</summary>
     MapPointClick = 0x3F,
 
+    /// <summary>0x42 - report a client exception/crash: uploads the (zlib-compressed) crash log or error string. Client diagnostics infrastructure, not a game action.</summary>
+    Exception = 0x42,
+
     /// <summary>0x43 - click an entity (by serial) or a tile (by x,y).</summary>
     Click = 0x43,
 
@@ -133,6 +139,9 @@ public enum ClientOpcode : byte
 
     /// <summary>0x45 - reply to the server's byte-heartbeat challenge (two bytes, echoed reversed).</summary>
     ByteHeartbeat = 0x45,
+
+    /// <summary>0x46 - request the details of the current group; no body.</summary>
+    GroupView = 0x46,
 
     /// <summary>0x47 - spend a level-up point to raise a primary stat (single-bit selector).</summary>
     StatPoint = 0x47,
@@ -152,6 +161,9 @@ public enum ClientOpcode : byte
     /// <summary>0x4F - upload the player's own profile (portrait + legend text).</summary>
     SetProfile = 0x4F,
 
+    /// <summary>0x54 - drive an open player-run shop (the employee/consignment window); echoes a 0x01 gate + the shop id then an action byte (withdraw / add / update / remove / close / opened). The C->S pair for S->C 0x4F PlayerShop. Multi-variant.</summary>
+    PlayerShopAction = 0x54,
+
     /// <summary>0x55 - drive a manufacture dialog; echoes the window's type+slot then a subtype byte (request page / make). Multi-variant.</summary>
     Manufacture = 0x55,
 
@@ -161,11 +173,26 @@ public enum ClientOpcode : byte
     /// <summary>0x68 - request the homepage/account URL for the main-menu link; no body. Answered by S->C 0x66 (subtype 3).</summary>
     RequestHomepage = 0x68,
 
+    /// <summary>0x6A - drive a mini-game; a leading action byte selects the sub-action (5 open / 6 submit / 7 sync / 8 result). Multi-variant.</summary>
+    MiniGame = 0x6A,
+
+    /// <summary>0x6C - drive the cash-shop / item-mall window; a leading subtype byte selects open / purchase / close. Multi-variant.</summary>
+    CashShop = 0x6C,
+
+    /// <summary>0x71 - keep-alive "still here" signal; no body. Sent on a timer when the client's activity flag is set.</summary>
+    SendAlive = 0x71,
+
+    /// <summary>0x73 - drive the in-client browser window; a leading sub-action byte selects the form (0 opened / 3 navigate). Multi-variant.</summary>
+    BrowserAction = 0x73,
+
     /// <summary>0x75 - reply to the server's tick-heartbeat challenge (server + client ticks).</summary>
     TickHeartbeat = 0x75,
 
     /// <summary>0x79 - set the player's social/group status (0-7).</summary>
     Status = 0x79,
+
+    /// <summary>0x7A - request the player's spouse/family name; no body. Answered by S->C 0x6D FamilyName.</summary>
+    RequestLoverName = 0x7A,
 
     /// <summary>0x7B - request metafile data: all checksums, or one metafile by name.</summary>
     RequestMetafile = 0x7B
