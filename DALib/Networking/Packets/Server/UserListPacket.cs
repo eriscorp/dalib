@@ -13,9 +13,9 @@ namespace DALib.Networking.Packets.Server;
 ///     <para>
 ///         Body: <c>[u16 totalAllShards][u16 shardCount]</c> then, for each listed user,
 ///         <c>[u8 Class][u8 Color][u8 SocialStatus][string8 Title][bool IsMaster][string8 Name]</c>.
-///         The first count is the total online across all server shards (e.g. Temuair, Medenia); the
-///         second is the count on the current shard and equals the rows that follow. <see cref="Parse" />
-///         uses the second.
+///         The first count is the total online across all server shards (e.g. Temuair, Medenia),
+///         carried by <see cref="TotalUserCount" />; the second is the count on the current shard and
+///         equals the rows that follow. <see cref="Parse" /> reads rows using the second.
 ///     </para>
 ///     <para>
 ///         <see cref="UserListEntry.Color" /> is a server-computed relationship indicator, not a
@@ -32,6 +32,14 @@ public sealed record UserListPacket : ServerPacket
     /// </summary>
     public IList<UserListEntry> Users { get; set; } = [];
 
+    /// <summary>
+    ///     The total user count across all server shards - the first of the packet's two u16 counts,
+    ///     which are always both on the wire. When null, <see cref="WriteBody" /> mirrors
+    ///     <see cref="Users" />'s count (the doubled-count shape a single-shard server sends).
+    ///     <see cref="Parse" /> always sets it from the wire.
+    /// </summary>
+    public ushort? TotalUserCount { get; set; }
+
     /// <inheritdoc />
     public override byte Opcode => (byte)ServerOpcode.UserList;
 
@@ -42,7 +50,12 @@ public sealed record UserListPacket : ServerPacket
             throw new InvalidOperationException(
                 $"UserList: user count {Users.Count} exceeds the wire u16 limit ({ushort.MaxValue}).");
 
-        writer.WriteUInt16((ushort)Users.Count);
+        if (TotalUserCount is { } total && total < Users.Count)
+            throw new InvalidOperationException(
+                $"UserList: TotalUserCount {total} is less than the listed user count {Users.Count}; "
+                + "the all-shards total must include the local rows.");
+
+        writer.WriteUInt16(TotalUserCount ?? (ushort)Users.Count);
         writer.WriteUInt16((ushort)Users.Count);
 
         foreach (var user in Users)
@@ -62,8 +75,8 @@ public sealed record UserListPacket : ServerPacket
         var reader = new PacketReader(body);
 
         // Two counts: the first is the total online across all server shards (e.g. Temuair, Medenia),
-        // the second is the count on the current shard, which equals the rows that follow. Use the second.
-        _ = reader.ReadUInt16();
+        // the second is the count on the current shard, which equals the rows that follow.
+        var totalUserCount = reader.ReadUInt16();
         var count = reader.ReadUInt16();
 
         // Minimum entry width: class + color + status + master flag + two empty string8 length prefixes.
@@ -86,7 +99,7 @@ public sealed record UserListPacket : ServerPacket
                 Name: reader.ReadString8()));
         }
 
-        return new UserListPacket { Users = users };
+        return new UserListPacket { Users = users, TotalUserCount = totalUserCount };
     }
 }
 
