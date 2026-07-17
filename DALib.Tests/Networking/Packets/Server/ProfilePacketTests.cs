@@ -164,6 +164,54 @@ public class ProfilePacketTests
         parsed.ProfileText.Should().Be("Hello there.");
     }
 
+    [Fact]
+    public void Parse_EmptyTail_RemainingFour_YieldsEmptyPortraitAndText()
+    {
+        // The registered-account empty tail: remaining = 4, portraitLen = 0, empty string16 text
+        // (`00 04 00 00 00 00`). This is the working retail form and the reference-server form.
+        var body = MinimalPacket().ToBody().ToArray();
+        body[^6..].Should().Equal(0x00, 0x04, 0x00, 0x00, 0x00, 0x00); // sanity: the tail we rely on
+
+        var parsed = ProfilePacket.Parse(body);
+
+        parsed.Portrait.Should().BeEmpty();
+        parsed.ProfileText.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Parse_ShortForm_RemainingZero_YieldsEmptyPortraitAndText()
+    {
+        // Retail's unregistered/trial-account short form: `remaining = 0` with no inner
+        // portrait/text fields at all. DALib used to over-read portraitLen off the end and throw
+        // (comhaigne retail-profile-0x34 finding). Build it by replacing the 6-byte empty tail
+        // (`00 04 00 00 00 00`) with the 2-byte short form (`00 00`).
+        var full = MinimalPacket().ToBody().ToArray();
+        var shortForm = full[..^6].Concat(new byte[] { 0x00, 0x00 }).ToArray();
+
+        var act = () => ProfilePacket.Parse(shortForm);
+
+        act.Should().NotThrow();
+        var parsed = act();
+        parsed.Name.Should().Be("X");          // prefix still parsed identically
+        parsed.Portrait.Should().BeEmpty();
+        parsed.ProfileText.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Parse_ShortForm_WithTrailingPadByte_StillParses()
+    {
+        // The same short form captured one byte longer: a stray all-zero S->C padding byte trails
+        // the `00 00` (the finding saw the same profile at both 157 and 158 bytes). The parser must
+        // not assume exact end-of-buffer alignment after the tail.
+        var full = MinimalPacket().ToBody().ToArray();
+        var padded = full[..^6].Concat(new byte[] { 0x00, 0x00, 0x00 }).ToArray();
+
+        var parsed = ProfilePacket.Parse(padded);
+
+        parsed.Portrait.Should().BeEmpty();
+        parsed.ProfileText.Should().BeEmpty();
+    }
+
     // ---- round-trip through the codec ---------------------------------------------------------
 
     [Fact]

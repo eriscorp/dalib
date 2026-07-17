@@ -21,7 +21,10 @@ namespace DALib.Networking.Packets.Server;
 ///         legend mark (<c>[u8 icon][u8 color][string8 prefix][string8 text]</c>), then the trailing
 ///         portrait/text blob: <c>[u16 remaining][u16 portraitLen][portrait bytes][string16 ProfileText]</c>
 ///         where <c>remaining = portraitLen + ProfileText.Length + 4</c> (the byte count of everything
-///         after the <c>remaining</c> field itself; derived on write, read-and-ignored on parse).
+///         after the <c>remaining</c> field itself; derived on write). Reference servers always emit
+///         <c>remaining &gt;= 4</c>; retail emits a short form with <c>remaining = 0</c> and no inner
+///         fields for unregistered/trial accounts, which <see cref="Parse" /> reads as an empty
+///         portrait and empty <see cref="ProfileText" />.
 ///     </para>
 ///     <para>
 ///         The 18-slot equipment block is in a fixed <em>display</em> order that is not the 1-18 pane-slot
@@ -192,13 +195,23 @@ public sealed record ProfilePacket : ServerPacket
         for (var i = 0; i < legendCount; i++)
             legend.Add(LegendMark.Parse(ref reader));
 
-        // [u16 remaining] is the byte count of the portrait/text tail; fully derivable from the two
-        // self-describing fields that follow, so it is read and discarded.
-        _ = reader.ReadUInt16();
+        // [u16 remaining] = the byte count of the portrait/text tail that follows. Reference servers
+        // (Hybrasyl/Chaos) always emit the formula value, which is >= 4 (the two length fields alone
+        // are 4 bytes). Retail emits a `remaining = 0` short form for unregistered/trial accounts:
+        // the inner portrait/text fields are absent entirely. Treat anything < 4 as "no tail follows",
+        // and require the 4 bytes to actually be present so a truncated tail degrades to empty rather
+        // than throwing. (A stray all-zero S->C padding byte after the tail is left unread and ignored.)
+        var remaining = reader.ReadUInt16();
 
-        var portraitLength = reader.ReadUInt16();
-        var portrait = reader.ReadBytes(portraitLength).ToArray();
-        var profileText = reader.ReadString16();
+        byte[] portrait = [];
+        var profileText = string.Empty;
+
+        if (remaining >= 4 && reader.Remaining.Length >= 4)
+        {
+            var portraitLength = reader.ReadUInt16();
+            portrait = reader.ReadBytes(portraitLength).ToArray();
+            profileText = reader.ReadString16();
+        }
 
         return new ProfilePacket
         {
