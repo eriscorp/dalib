@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -14,12 +14,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <!-- Native Skia so rendering tests run on Linux; base SkiaSharp bundles only Windows/macOS natives. Test-only, not shipped. -->
+    <!-- Native Skia so the convert path can run on Linux; base SkiaSharp bundles only Windows/macOS natives. -->
     <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.116.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DALib\DALib.csproj" />
+    <ProjectReference Include="..\Foscail\Foscail.csproj" />
   </ItemGroup>
 
   <ItemGroup>

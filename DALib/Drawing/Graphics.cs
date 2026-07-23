@@ -1096,6 +1096,16 @@ public static class Graphics
         int height,
         SKColor[] data)
     {
+        //empty/degenerate frame (non-positive dimensions): return a 1x1 transparent image so callers
+        //that iterate every frame don't crash on SKBitmap(<=0, ...). Matches the EpfFrame/EfaFrame guards.
+        if ((width <= 0) || (height <= 0))
+        {
+            using var emptyBitmap = new SKBitmap(1, 1, SKColorType.Bgra8888, SKAlphaType.Premul);
+            emptyBitmap.Erase(CONSTANTS.Transparent);
+
+            return SKImage.FromBitmap(emptyBitmap);
+        }
+
         //when left/top are negative, skip the padding and shift pixels to 0
         var dstOffsetX = Math.Max(0, left);
         var dstOffsetY = Math.Max(0, top);
@@ -1135,6 +1145,16 @@ public static class Graphics
         Palette palette,
         SKAlphaType alphaType = SKAlphaType.Premul)
     {
+        //empty/degenerate frame (non-positive dimensions): return a 1x1 transparent image so callers
+        //that iterate every frame don't crash on SKBitmap(<=0, ...). Matches the EpfFrame/EfaFrame guards.
+        if ((width <= 0) || (height <= 0))
+        {
+            using var emptyBitmap = new SKBitmap(1, 1, SKColorType.Bgra8888, alphaType);
+            emptyBitmap.Erase(CONSTANTS.Transparent);
+
+            return SKImage.FromBitmap(emptyBitmap);
+        }
+
         //when left/top are negative, skip the padding and shift pixels to 0
         var dstOffsetX = Math.Max(0, left);
         var dstOffsetY = Math.Max(0, top);
