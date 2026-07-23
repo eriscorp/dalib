@@ -20,7 +20,11 @@
         <RepositoryUrl>https://github.com/eriscorp/dalib</RepositoryUrl>
         <Tags>hybrasyl; dalib; foscail; dat; epf; spf; doomvas;</Tags>
         <IsPackable>true</IsPackable>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
+    <ItemGroup>
+        <None Include="README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="../DALib/DALib.csproj"/>
     </ItemGroup>
