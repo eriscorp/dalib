@@ -40,7 +40,14 @@ public class DataArchive : KeyedCollection<string, DataArchiveEntry>, ISavable, 
 
         using var reader = new BinaryReader(BaseStream, Encoding.Default, true);
 
-        var expectedNumberOfEntries = reader.ReadInt32() - 1;
+        var entryCountWord = reader.ReadInt32();
+
+        // A negative count word means this is not a legacy-index archive (the extended/compressed
+        // layout leads with 0xFFFFFFFF); parsing on would silently yield an empty archive.
+        if (entryCountWord < 0)
+            throw new InvalidDataException($"Not a supported DAT archive (entry count word is {entryCountWord})");
+
+        var expectedNumberOfEntries = entryCountWord - 1;
 
         for (var i = 0; i < expectedNumberOfEntries; ++i)
         {
@@ -172,9 +179,18 @@ public class DataArchive : KeyedCollection<string, DataArchiveEntry>, ISavable, 
     {
         ThrowIfDisposed();
 
+        var destRoot = Path.GetFullPath(dir);
+
+        if (!Path.EndsInDirectorySeparator(destRoot))
+            destRoot += Path.DirectorySeparatorChar;
+
         foreach (var entry in this)
         {
-            var path = Path.Combine(dir, entry.EntryName);
+            // entry names come from archive bytes; refuse any that would resolve outside the destination
+            var path = Path.GetFullPath(entry.EntryName, destRoot);
+
+            if (!path.StartsWith(destRoot, StringComparison.Ordinal))
+                throw new InvalidDataException($"Entry name \"{entry.EntryName}\" resolves outside the destination directory");
 
             using var stream = File.Create(path);
             using var segment = GetEntryStream(entry);
@@ -635,11 +651,15 @@ public class DataArchive : KeyedCollection<string, DataArchiveEntry>, ISavable, 
     /// </returns>
     public static DataArchive FromFile(string path, bool memoryMapped = true, bool newformat = false)
     {
+        // honor the caller's path when the file exists as-given; WithExtension is only the
+        // "name without extension" convenience (it would rewrite e.g. "FOO.DAT" to "FOO.dat")
+        var resolvedPath = File.Exists(path) ? path : path.WithExtension(".dat");
+
         if (memoryMapped)
         {
             //use a memory mapped file
             var fs = File.Open(
-                path.WithExtension(".dat"),
+                resolvedPath,
                 new FileStreamOptions
                 {
                     Access = FileAccess.Read,
@@ -662,7 +682,7 @@ public class DataArchive : KeyedCollection<string, DataArchiveEntry>, ISavable, 
 
         //load the file into memory
         using var fileStream = File.Open(
-            path.WithExtension(".dat"),
+            resolvedPath,
             new FileStreamOptions
             {
                 Access = FileAccess.Read,
