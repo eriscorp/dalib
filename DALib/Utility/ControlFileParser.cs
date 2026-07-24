@@ -27,36 +27,9 @@ public sealed class ControlFileParser
             }
             case TokenType.EndControl:
             {
-                //if the control has images
-                if (currentControl?.Images?.Count > 0)
-                {
-                    var images = currentControl.Images;
-                    var currentIndex = 0;
-                    var expandedImages = new List<(string ImageName, int FrameIndex)>();
-            
-                    //expand the image list
-                    //the control files only give us the first and last image indexes, we need to fill in the rest outselves
-                    while (true)
-                    {
-                        var firstEntry = images[currentIndex];
-                        var startIndex = images.FindIndex(pair => pair.ImageName.Equals(firstEntry.ImageName));
-                        var endIndex = images.FindLastIndex(pair => pair.ImageName.Equals(firstEntry.ImageName));
-
-                        var startNum = images[startIndex].FrameIndex;
-                        var endNum = images[endIndex].FrameIndex;
-                        
-                        for (var i = startNum; i <= endNum; i++)
-                            expandedImages.Add((firstEntry.ImageName, i));
-
-                        currentIndex = endIndex + 1;
-
-                        if (currentIndex >= images.Count)
-                            break;
-                    }
-            
-                    currentControl.Images = expandedImages;
-                }
-                
+                //<IMAGE> lines are an explicit, ordered list of (name, frame) visual states, not a
+                //start/end range to fill in. Keep them exactly as parsed. Range-filling fabricated
+                //frames for any sparse list (e.g. 0,1,3 -> 0,1,2,3), shifting later button states.
                 controlFile.TryAdd(currentControl!, throwError: false);
                 currentControl = null;
 

@@ -137,16 +137,23 @@ public sealed class SpfFile : Collection<SpfFrame>, ISavable
         for (var i = 0; i < frameCount; i++)
         {
             var frame = Items[i];
-            segment.Seek(frame.StartAddress, SeekOrigin.Begin);
+
+            if ((frame.PixelWidth <= 0) || (frame.PixelHeight <= 0))
+                continue;
+
             var index = 0;
 
-            for (var y = 0; y < frame.Bottom; y++)
+            //the frame size is the visible rectangle (Right-Left x Bottom-Top), not the absolute
+            //Right/Bottom; source rows advance by ByteWidth (pitch), so any per-row padding is skipped
+            var rowPaddingBytes = (int)frame.ByteWidth - (frame.PixelWidth * 2);
+
+            for (var y = 0; y < frame.PixelHeight; y++)
             {
-                for (var x = 0; x < frame.Right; x++)
-                {
-                    var color = reader.ReadRgb565Color();
-                    frame.ColorData![index++] = color;
-                }
+                for (var x = 0; x < frame.PixelWidth; x++)
+                    frame.ColorData![index++] = reader.ReadRgb565Color();
+
+                if (rowPaddingBytes > 0)
+                    reader.BaseStream.Seek(rowPaddingBytes, SeekOrigin.Current);
             }
         }
     }
@@ -202,6 +209,9 @@ public sealed class SpfFile : Collection<SpfFrame>, ISavable
             var frame = Items[i];
             segment.Seek(frame.StartAddress, SeekOrigin.Begin);
             _ = segment.Read(frame.Data!, 0, (int)frame.ByteCount);
+
+            //de-pad rows when the source pitch exceeds the visible width (no-op for tight/real frames)
+            frame.CompactPalettizedRows();
         }
     }
 

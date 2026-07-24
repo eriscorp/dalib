@@ -173,14 +173,32 @@ public sealed class SpfView
                 case SpfFormatType.Palettized:
                     frame.Data = reader.ReadBytes((int)toc.ByteCount);
 
+                    //de-pad rows when the source pitch exceeds the visible width (no-op for tight/real frames)
+                    frame.CompactPalettizedRows();
+
                     break;
                 case SpfFormatType.Colorized:
-                    frame.ColorData = new SKColor[toc.ImageByteCount];
-                    var colorIndex = 0;
+                    var pixelWidth = toc.Right - toc.Left;
+                    var pixelHeight = toc.Bottom - toc.Top;
 
-                    for (var y = 0; y < toc.Bottom; y++)
-                        for (var x = 0; x < toc.Right; x++)
-                            frame.ColorData[colorIndex++] = reader.ReadRgb565Color();
+                    frame.ColorData = new SKColor[Math.Max(0, pixelWidth * pixelHeight)];
+
+                    if ((pixelWidth > 0) && (pixelHeight > 0))
+                    {
+                        var colorIndex = 0;
+
+                        //visible rectangle (Right-Left x Bottom-Top); rows advance by ByteWidth (pitch)
+                        var rowPaddingBytes = (int)toc.ByteWidth - (pixelWidth * 2);
+
+                        for (var y = 0; y < pixelHeight; y++)
+                        {
+                            for (var x = 0; x < pixelWidth; x++)
+                                frame.ColorData[colorIndex++] = reader.ReadRgb565Color();
+
+                            if (rowPaddingBytes > 0)
+                                stream.Seek(rowPaddingBytes, SeekOrigin.Current);
+                        }
+                    }
 
                     break;
             }

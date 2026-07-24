@@ -31,7 +31,9 @@ public sealed class MapFile(int width, int height) : ISavable
     private MapFile(Stream stream, int width, int height)
         : this(width, height)
     {
-        if (stream.Length != (width * height * 6))
+        //the client reads the full width*height*6 cell array and accepts (ignores) any trailing bytes;
+        //only a file too short to hold the array is rejected (see darkages-741 file_read_map_cells)
+        if (stream.Length < (width * height * 6))
             throw new InvalidDataException("Invalid map file");
 
         using var reader = new BinaryReader(stream, Encoding.Default, true);
@@ -39,9 +41,10 @@ public sealed class MapFile(int width, int height) : ISavable
         for (var y = 0; y < Height; ++y)
             for (var x = 0; x < Width; ++x)
             {
-                var background = reader.ReadInt16();
-                var leftForeground = reader.ReadInt16();
-                var rightForeground = reader.ReadInt16();
+                //tile ids are unsigned 16-bit; stc foreground ids can exceed 32767 (stc{index:D5})
+                var background = reader.ReadUInt16();
+                var leftForeground = reader.ReadUInt16();
+                var rightForeground = reader.ReadUInt16();
 
                 Tiles[x, y] = new MapTile
                 {
@@ -142,15 +145,15 @@ public sealed class MapTile
     ///     The id of the background part of the tile. This id references a <see cref="Tile" /> from a <see cref="Tileset" />
     ///     loaded from Seo.dat
     /// </summary>
-    public short Background { get; init; }
+    public ushort Background { get; init; }
 
     /// <summary>
     ///     The id of the left foreground part of the tile. This id references an HPF image loaded from ia.dat
     /// </summary>
-    public short LeftForeground { get; set; }
+    public ushort LeftForeground { get; set; }
 
     /// <summary>
     ///     The id of the right foreground part of the tile. This id references an HPF image loaded from ia.dat
     /// </summary>
-    public short RightForeground { get; set; }
+    public ushort RightForeground { get; set; }
 }
