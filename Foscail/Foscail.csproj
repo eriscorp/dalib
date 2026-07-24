@@ -11,7 +11,7 @@
         <PackAsTool>true</PackAsTool>
         <ToolCommandName>foscail</ToolCommandName>
         <PackageId>Foscail</PackageId>
-        <Version>1.0.0-beta1</Version>
+        <Version>1.0.0-beta2</Version>
         <Title>Foscail</Title>
         <Description>Command-line tools for Dark Ages (DOOMVAS v1) client data — unpack DAT archives and convert assets to modern formats.</Description>
         <Authors>Kyle Speck and contributors</Authors>
