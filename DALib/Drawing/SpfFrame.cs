@@ -98,4 +98,31 @@ public sealed class SpfFrame
     ///     The pixel width of the frame
     /// </summary>
     public int PixelWidth => Right - Left;
+
+    /// <summary>
+    ///     Compacts a palettized frame whose source rows are padded (<see cref="ByteWidth" /> &gt;
+    ///     <see cref="PixelWidth" />) down to a tight <c>PixelWidth x PixelHeight</c> buffer and normalizes
+    ///     the byte-count metadata to match, so renderers can stride by <see cref="PixelWidth" />. A no-op
+    ///     when there is no row padding (the case for every known 7.41 asset).
+    /// </summary>
+    internal void CompactPalettizedRows()
+    {
+        if ((PixelWidth <= 0) || (PixelHeight <= 0) || (Data is null) || (ByteWidth <= (uint)PixelWidth))
+            return;
+
+        var pitch = (int)ByteWidth;
+
+        if (Data.Length < (PixelHeight * pitch))
+            return;
+
+        var compact = new byte[PixelWidth * PixelHeight];
+
+        for (var y = 0; y < PixelHeight; y++)
+            System.Array.Copy(Data, y * pitch, compact, y * PixelWidth, PixelWidth);
+
+        Data = compact;
+        ByteWidth = (uint)PixelWidth;
+        ByteCount = (uint)compact.Length;
+        ImageByteCount = (uint)compact.Length;
+    }
 }

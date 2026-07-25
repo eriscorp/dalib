@@ -956,7 +956,7 @@ public static class Graphics
 
                     var lfgDrawY = fgInitialDrawY + (x + 1) * CONSTANTS.HALF_TILE_HEIGHT - lfgImage.Height + CONSTANTS.HALF_TILE_HEIGHT;
 
-                    if (lfgIndex.IsRenderedTileIndex())
+                    if (((int)lfgIndex).IsRenderedTileIndex())
                         canvas.DrawImage(
                             lfgImage,
                             lfgDrawX,
@@ -979,7 +979,7 @@ public static class Graphics
 
                     var rfgDrawY = fgInitialDrawY + (x + 1) * CONSTANTS.HALF_TILE_HEIGHT - rfgImage.Height + CONSTANTS.HALF_TILE_HEIGHT;
 
-                    if (rfgIndex.IsRenderedTileIndex())
+                    if (((int)rfgIndex).IsRenderedTileIndex())
                         canvas.DrawImage(
                             rfgImage,
                             rfgDrawX,
@@ -1081,13 +1081,32 @@ public static class Graphics
     ///     A palette containing colors used by the tile
     /// </param>
     public static SKImage RenderTile(Tile tile, Palette palette)
-        => SimpleRender(
-            0,
-            0,
-            tile.PixelWidth,
-            tile.PixelHeight,
-            tile.Data,
-            palette);
+    {
+        //ground tiles are isometric diamonds inside a TILE_WIDTH x TILE_HEIGHT record. Only the diamond is
+        //visible; inside it palette index 0 is an ordinary opaque color (unlike sprites, where index 0 is
+        //transparent), and the padding outside the diamond is masked to transparent. Row r spans columns
+        //[margin, TILE_WIDTH - margin) where margin = |centerRow - r| * 2 (darkages-741 map-tile-banks.md).
+        const int CENTER_ROW = (CONSTANTS.TILE_HEIGHT - 1) / 2;
+
+        using var bitmap = new SKBitmap(CONSTANTS.TILE_WIDTH, CONSTANTS.TILE_HEIGHT, SKColorType.Bgra8888, SKAlphaType.Premul);
+        using var pixMap = bitmap.PeekPixels();
+
+        var pixelBuffer = pixMap.GetPixelSpan<SKColor>();
+        pixelBuffer.Fill(CONSTANTS.Transparent);
+
+        for (var y = 0; y < CONSTANTS.TILE_HEIGHT; y++)
+        {
+            var margin = Math.Abs(CENTER_ROW - y) * 2;
+
+            for (var x = margin; x < (CONSTANTS.TILE_WIDTH - margin); x++)
+            {
+                var pixelIndex = y * CONSTANTS.TILE_WIDTH + x;
+                pixelBuffer[pixelIndex] = palette[tile.Data[pixelIndex]];
+            }
+        }
+
+        return SKImage.FromBitmap(bitmap);
+    }
 
     private static SKImage SimpleRender(
         int left,

@@ -21,36 +21,8 @@ public class UnpackCommandTests : IDisposable
 
     public void Dispose() => Directory.Delete(ScratchDir, true);
 
-    // legacy index layout: [count+1:i32] then per entry [start:i32][name:13 ascii, NUL padded],
-    // a final [end:i32], then the concatenated entry data
     private static byte[] BuildArchive(params (string Name, byte[] Data)[] entries)
-    {
-        const int NAME_LENGTH = 13;
-
-        using var ms = new MemoryStream();
-
-        using (var writer = new BinaryWriter(ms, Encoding.Default, true))
-        {
-            writer.Write(entries.Length + 1);
-
-            var address = 4 + entries.Length * (4 + NAME_LENGTH) + 4;
-
-            foreach (var (name, data) in entries)
-            {
-                writer.Write(address);
-                writer.Write(Encoding.ASCII.GetBytes(name.PadRight(NAME_LENGTH, '\0')));
-
-                address += data.Length;
-            }
-
-            writer.Write(address);
-
-            foreach (var (_, data) in entries)
-                writer.Write(data);
-        }
-
-        return ms.ToArray();
-    }
+        => SyntheticData.BuildArchive(entries);
 
     private string WriteArchive(string fileName, byte[] bytes)
     {

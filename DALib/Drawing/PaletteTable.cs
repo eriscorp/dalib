@@ -61,6 +61,18 @@ public class PaletteTable : ISavable
     /// </summary>
     public PaletteTable() { }
 
+    //strips a trailing "//" comment and splits on runs of whitespace, matching the client's
+    //palette-table parser (darkages-741 file_palette_table_parse_ranges: blank lines and // comments skipped)
+    private static string[] Tokenize(string line)
+    {
+        var commentIndex = line.IndexOf("//", StringComparison.Ordinal);
+
+        if (commentIndex >= 0)
+            line = line[..commentIndex];
+
+        return line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+    }
+
     private PaletteTable(Stream stream)
     {
         using var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
@@ -72,7 +84,7 @@ public class PaletteTable : ISavable
             if (string.IsNullOrEmpty(line))
                 continue;
 
-            var vals = line.Split(' ');
+            var vals = Tokenize(line);
 
             if ((vals.Length < 2) || !int.TryParse(vals[0], out var min) || !int.TryParse(vals[1], out var paletteNumOrMax))
                 continue;
@@ -367,7 +379,7 @@ public class PaletteTable : ISavable
             if (string.IsNullOrEmpty(line))
                 continue;
 
-            var vals = line.Split(' ');
+            var vals = Tokenize(line);
 
             if ((vals.Length == 3)
                 && int.TryParse(vals[0], out var start)

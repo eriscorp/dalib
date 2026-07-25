@@ -125,28 +125,43 @@ public sealed class SpfFile : Collection<SpfFrame>, ISavable
                     StartAddress = startAddress,
                     ByteWidth = byteWidth,
                     ByteCount = byteCount,
-                    ImageByteCount = imageByteCount,
-                    ColorData = new SKColor[imageByteCount]
+                    ImageByteCount = imageByteCount
                 });
         }
 
-        var totalByteAcount = reader.ReadUInt32();
-
-        using var segment = new StreamSegment(reader.BaseStream, reader.BaseStream.Position, totalByteAcount);
+        _ = reader.ReadUInt32(); // totalByteCount
+        var dataSectionStart = reader.BaseStream.Position;
 
         for (var i = 0; i < frameCount; i++)
         {
             var frame = Items[i];
-            segment.Seek(frame.StartAddress, SeekOrigin.Begin);
+
+            if ((frame.PixelWidth <= 0) || (frame.PixelHeight <= 0))
+            {
+                frame.ColorData = [];
+
+                continue;
+            }
+
+            //seek to this frame's data via StartAddress. A colorized frame stores two pixel copies
+            //(RGB565 then RGB555); we read only the first. Seeking per-frame (rather than reading
+            //sequentially) is what keeps multi-frame files aligned past each frame's second copy.
+            reader.BaseStream.Seek(dataSectionStart + frame.StartAddress, SeekOrigin.Begin);
+
+            frame.ColorData = new SKColor[frame.PixelWidth * frame.PixelHeight];
             var index = 0;
 
-            for (var y = 0; y < frame.Bottom; y++)
+            //the frame size is the visible rectangle (Right-Left x Bottom-Top); source rows advance by
+            //ByteWidth (pitch), so any per-row padding after the visible pixels is skipped
+            var rowPaddingBytes = (int)frame.ByteWidth - (frame.PixelWidth * 2);
+
+            for (var y = 0; y < frame.PixelHeight; y++)
             {
-                for (var x = 0; x < frame.Right; x++)
-                {
-                    var color = reader.ReadRgb565Color();
-                    frame.ColorData![index++] = color;
-                }
+                for (var x = 0; x < frame.PixelWidth; x++)
+                    frame.ColorData[index++] = reader.ReadRgb565Color();
+
+                if (rowPaddingBytes > 0)
+                    reader.BaseStream.Seek(rowPaddingBytes, SeekOrigin.Current);
             }
         }
     }
@@ -202,6 +217,9 @@ public sealed class SpfFile : Collection<SpfFrame>, ISavable
             var frame = Items[i];
             segment.Seek(frame.StartAddress, SeekOrigin.Begin);
             _ = segment.Read(frame.Data!, 0, (int)frame.ByteCount);
+
+            //de-pad rows when the source pitch exceeds the visible width (no-op for tight/real frames)
+            frame.CompactPalettizedRows();
         }
     }
 
@@ -254,7 +272,14 @@ public sealed class SpfFile : Collection<SpfFrame>, ISavable
         for (var i = 0; i < Count; i++)
         {
             var frame = Items[i];
+
+            //derive the on-disk sizes from the visible rectangle so they agree with the compact
+            //ColorData the reader produces (a colorized frame stores two pixel copies: 565 then 555)
+            var pixelCount = (uint)(frame.PixelWidth * frame.PixelHeight);
             frame.StartAddress = startAddress;
+            frame.ByteWidth = (uint)(frame.PixelWidth * 2);
+            frame.ImageByteCount = pixelCount * 2;
+            frame.ByteCount = pixelCount * 4;
             startAddress += frame.ByteCount;
 
             writer.Write(frame.Left);
@@ -279,21 +304,21 @@ public sealed class SpfFile : Collection<SpfFrame>, ISavable
             var frame = Items[i];
 
             //write primary color data
-            for (var y = 0; y < frame.Bottom; y++)
+            for (var y = 0; y < frame.PixelHeight; y++)
             {
-                for (var x = 0; x < frame.Right; x++)
+                for (var x = 0; x < frame.PixelWidth; x++)
                 {
-                    var color = frame.ColorData![y * frame.Right + x];
+                    var color = frame.ColorData![y * frame.PixelWidth + x];
                     writer.WriteRgb565Color(color);
                 }
             }
 
             //write secondary color dta
-            for (var y = 0; y < frame.Bottom; y++)
+            for (var y = 0; y < frame.PixelHeight; y++)
             {
-                for (var x = 0; x < frame.Right; x++)
+                for (var x = 0; x < frame.PixelWidth; x++)
                 {
-                    var color = frame.ColorData![y * frame.Right + x];
+                    var color = frame.ColorData![y * frame.PixelWidth + x];
                     writer.WriteRgb555Color(color);
                 }
             }

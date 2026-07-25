@@ -31,7 +31,17 @@ internal static class UnpackCommand
 
         var convertOpt = new Option<bool>("--convert", "-c")
         {
-            Description = "Also convert self-contained image assets (SPF, EFA) to PNG alongside the raw files."
+            Description = "Also convert image assets to PNG alongside the raw files."
+        };
+
+        var animateOpt = new Option<bool>("--animate", "-a")
+        {
+            Description = "With --convert: additionally emit looping animated PNGs for effect (EFA) files and monster (MPF) sequences."
+        };
+
+        var gifOpt = new Option<bool>("--gif", "-g")
+        {
+            Description = "With --convert: additionally emit looping animated GIFs (256-color quantized) for the same animations."
         };
 
         var command = new Command("unpack",
@@ -39,6 +49,8 @@ internal static class UnpackCommand
         command.Add(inputArg);
         command.Add(outputOpt);
         command.Add(convertOpt);
+        command.Add(animateOpt);
+        command.Add(gifOpt);
 
         command.SetAction(parseResult =>
         {
@@ -47,13 +59,16 @@ internal static class UnpackCommand
                          ?? Path.Combine(Environment.CurrentDirectory, "foscail-out");
             var convert = parseResult.GetValue(convertOpt);
 
-            return Run(input, output, convert);
+            var animationFormats = (parseResult.GetValue(animateOpt) ? AnimationFormats.Apng : AnimationFormats.None)
+                                   | (parseResult.GetValue(gifOpt) ? AnimationFormats.Gif : AnimationFormats.None);
+
+            return Run(input, output, convert, animationFormats);
         });
 
         return command;
     }
 
-    public static int Run(string input, string output, bool convert)
+    public static int Run(string input, string output, bool convert, AnimationFormats animationFormats = AnimationFormats.None)
     {
         var archives = ResolveArchives(input);
 
@@ -62,6 +77,10 @@ internal static class UnpackCommand
             Console.Error.WriteLine($"No .dat archive found at '{input}'.");
             return 1;
         }
+
+        // sibling archives (khanpal.dat, hades.dat) resolve from the directory the input lives in
+        var sourceDir = Directory.Exists(input) ? input : Path.GetDirectoryName(Path.GetFullPath(input));
+        using var context = new ConversionContext(sourceDir);
 
         var totalEntries = 0;
         var totalImages = 0;
@@ -129,13 +148,23 @@ internal static class UnpackCommand
                 {
                     try
                     {
-                        totalImages += AssetConverter.ConvertEntry(entry, destDir);
+                        totalImages += AssetConverter.ConvertEntry(entry, archive, name, context, destDir, animationFormats);
                     }
                     catch (Exception ex)
                     {
                         Console.Error.WriteLine($"    ! {entry.EntryName}: convert failed ({ex.Message})");
                         failures++;
                     }
+                }
+
+                try
+                {
+                    totalImages += AssetConverter.ConvertTiles(archive, name, context, destDir);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"    ! {name}: tile conversion failed ({ex.Message})");
+                    failures++;
                 }
             }
         }

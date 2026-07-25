@@ -195,7 +195,8 @@ public sealed class HeaFile : ISavable
 
         for (var i = byteOffset; ((i + 1) < RleData.Length) && (pixelIndex < layerWidth); i += 2)
         {
-            var value = RleData[i];
+            //only the low 6 bits are intensity; the top two are flags (masked by the client's decoder)
+            var value = (byte)(RleData[i] & 0x3F);
             var count = RleData[i + 1];
 
             if (count == 0)
