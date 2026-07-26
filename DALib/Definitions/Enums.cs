@@ -107,6 +107,34 @@ public enum MpfIdleType
 }
 
 /// <summary>
+///     How a <see cref="DALib.Drawing.PaletteResolver" /> rule sources the palette for a legacy asset.
+/// </summary>
+public enum PaletteSourceKind
+{
+    /// <summary>
+    ///     A <c>PaletteLookup</c> over a <c>&lt;table&gt;.tbl</c> + <c>&lt;palette&gt;*.pal</c> set, keyed by the entry's
+    ///     numeric identifier through the table (an extra level of indirection).
+    /// </summary>
+    Table,
+
+    /// <summary>
+    ///     A palette-number → palette map (no table), keyed by the entry's numeric identifier directly.
+    /// </summary>
+    Indexed,
+
+    /// <summary>
+    ///     A single named <c>.pal</c> entry. The rule always yields the same palette regardless of the entry.
+    /// </summary>
+    Fixed,
+
+    /// <summary>
+    ///     An indexed map keyed by a number written into the rule itself, not read from the entry (the hand-mapped
+    ///     <c>setoa.dat</c> GUI family).
+    /// </summary>
+    Constant
+}
+
+/// <summary>
 ///     Represents the different types of SPF formats
 /// </summary>
 public enum SpfFormatType
