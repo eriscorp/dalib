@@ -404,11 +404,37 @@ internal static partial class AssetConverter
             return RenderEpfFrames(entry, destDir, (_, _) => palette, alphaType);
         }
 
-        // no known family: in the single-palette era (legend.pal, no family tables) every EPF is
-        // renderable with the global palette; modern archives leave unknown families raw
-        var fallback = context.GetFallbackPalette(archiveName, archive);
+        // no known family: it's UI / interface art, whose palette ships in the archive. Resolve it
+        // (same-name .pal, setoa's gui00.pal, or legend.pal from here or a sibling Legend.dat).
+        var uiPalette = ResolveUiPalette(name, archive, context);
 
-        return fallback is null ? 0 : RenderEpfFrames(entry, destDir, (_, _) => fallback);
+        return uiPalette is null ? 0 : RenderEpfFrames(entry, destDir, (_, _) => uiPalette);
+    }
+
+    // UI / interface EPFs (setoa chrome, Legend emotes/art, national town-maps/paper) carry no family
+    // table; their palette ships alongside them. Resolution order, empirically grounded (probe of the
+    // 7.41 setoa/Legend/national art, not a binary trace):
+    //   1) a same-name .pal beside the EPF   (field001.epf -> field001.pal; f*, Backpal*, ...)
+    //   2) setoa GUI chrome                   -> gui00.pal
+    //   3) legend.pal                         -> this archive's, or a sibling Legend.dat (national
+    //                                            ships no palette of its own and borrows Legend's)
+    private static Palette? ResolveUiPalette(string name, DataArchive archive, ConversionContext context)
+    {
+        if (archive.TryGetValue($"{name}.pal", out var samePal))
+            return Palette.FromEntry(samePal);
+
+        if (archive.TryGetValue("gui00.pal", out var gui))
+            return Palette.FromEntry(gui);
+
+        if (archive.TryGetValue("legend.pal", out var legend))
+            return Palette.FromEntry(legend);
+
+        var siblingLegend = context.GetSiblingArchive("Legend.dat");
+
+        if ((siblingLegend is not null) && siblingLegend.TryGetValue("legend.pal", out var siblingPal))
+            return Palette.FromEntry(siblingPal);
+
+        return null;
     }
 
     private static PaletteLookup? NonEmpty(PaletteLookup lookup) => lookup.Palettes.Count == 0 ? null : lookup.Freeze();
