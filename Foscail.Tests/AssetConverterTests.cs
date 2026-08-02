@@ -187,17 +187,64 @@ public class AssetConverterTests : IDisposable
     }
 
     [Fact]
-    public void Modern_Archive_With_Family_Tables_Never_Falls_Back()
+    public void Setoa_Ui_Chrome_Uses_Gui00_Pal()
     {
-        // 7.41's Legend.dat has legend.pal AND itempal.tbl — unknown families must stay raw there
+        // setoa UI art has no family table; the whole chrome set shares gui00.pal. gui01 is a distinct
+        // color so a "just grab any gui*.pal" bug would show up.
         var dat = WriteDat(
-            "modern.dat",
+            "setoa.dat",
+            SyntheticData.BuildArchive(
+                ("menubtn.epf", SyntheticData.BuildEpf()),
+                ("gui00.pal", SyntheticData.BuildPalette(Red)),
+                ("gui01.pal", SyntheticData.BuildPalette(Green))));
+
+        ConvertAll(dat).Should().Be(1);
+        SyntheticData.ReadPixel(Path.Combine(OutDir, "menubtn.epf.png"), 0, 0).Should().Be(Red);
+    }
+
+    [Fact]
+    public void Name_Matched_Pal_Wins_Over_Gui00()
+    {
+        // a same-name .pal beside the EPF is the strongest signal and beats the gui00 chrome default
+        var dat = WriteDat(
+            "setoa.dat",
+            SyntheticData.BuildArchive(
+                ("field001.epf", SyntheticData.BuildEpf()),
+                ("field001.pal", SyntheticData.BuildPalette(Red)),
+                ("gui00.pal", SyntheticData.BuildPalette(Green))));
+
+        ConvertAll(dat).Should().Be(1);
+        SyntheticData.ReadPixel(Path.Combine(OutDir, "field001.epf.png"), 0, 0).Should().Be(Red);
+    }
+
+    [Fact]
+    public void National_Ui_Uses_Sibling_Legend_Pal()
+    {
+        // national.dat ships no palette of its own; its town-map/paper art borrows legend.pal from a
+        // sibling Legend.dat, the same cross-archive pattern khan parts use for khanpal.dat
+        WriteDat("Legend.dat", SyntheticData.BuildArchive(("legend.pal", SyntheticData.BuildPalette(Red))));
+
+        var dat = WriteDat("national.dat", SyntheticData.BuildArchive(("tmap0.epf", SyntheticData.BuildEpf())));
+
+        ConvertAll(dat).Should().Be(1);
+        SyntheticData.ReadPixel(Path.Combine(OutDir, "tmap0.epf.png"), 0, 0).Should().Be(Red);
+    }
+
+    [Fact]
+    public void Unknown_Family_Uses_Legend_Pal_When_Present()
+    {
+        // 7.41's Legend.dat carries legend.pal alongside family tables; unknown UI families there
+        // resolve through legend.pal (probe-confirmed for emotes/art) rather than staying raw. Known
+        // families are unaffected — they route to their own table before reaching this path.
+        var dat = WriteDat(
+            "Legend.dat",
             SyntheticData.BuildArchive(
                 ("legend.pal", SyntheticData.BuildPalette(Red)),
                 ("itempal.tbl", "1 0\n"u8.ToArray()),
                 ("item000.pal", SyntheticData.BuildPalette(Blue)),
-                ("album.epf", SyntheticData.BuildEpf())));
+                ("emot01.epf", SyntheticData.BuildEpf())));
 
-        ConvertAll(dat).Should().Be(0);
+        ConvertAll(dat).Should().Be(1);
+        SyntheticData.ReadPixel(Path.Combine(OutDir, "emot01.epf.png"), 0, 0).Should().Be(Red);
     }
 }
