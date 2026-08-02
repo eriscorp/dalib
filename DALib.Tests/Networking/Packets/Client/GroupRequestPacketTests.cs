@@ -57,8 +57,8 @@ public class GroupRequestPacketTests
     [Fact]
     public void WriteBody_Groupbox_PinsCaptureBytes()
     {
-        // Distinct caps Warrior 1 / Wizard 2 / Monk 3 / Priest 4 / Rogue 5 appear on the wire as
-        // 01 02 03 04 05, proving the order W, Wiz, Monk, Priest, Rogue.
+        // Caps go on the wire in UI row order: Warrior, Wizard, Rogue, Priest, Monk (HTOO-64).
+        // Each cap gets a distinct value so the assertion fails if any two are transposed.
         // 04 06"Kedian" 04"AAAA" 04"BBBB" 0D 25 01 02 03 04 05 (no trailing byte).
         var packet = GroupRequestPacket.Groupbox(
             leader: "Kedian",
@@ -68,9 +68,9 @@ public class GroupRequestPacketTests
             maxLevel: 0x25,
             maxWarrior: 1,
             maxWizard: 2,
-            maxRogue: 5,
+            maxRogue: 3,
             maxPriest: 4,
-            maxMonk: 3);
+            maxMonk: 5);
 
         packet.ToBody().Should().Equal(
             (byte)0x04,
@@ -85,7 +85,8 @@ public class GroupRequestPacketTests
     public void Parse_Groupbox_FromCaptureBytes_DecodesAllFields()
     {
         // The decoded body (codec has already stripped the [00][opcode] padding).
-        // Caps on the wire are 01 02 03 04 05 -> Warrior 1, Wizard 2, Monk 3, Priest 4, Rogue 5.
+        // Caps on the wire are 01 02 03 04 05 -> Warrior 1, Wizard 2, Rogue 3, Priest 4, Monk 5
+        // (UI row order, HTOO-64).
         byte[] body =
         [
             0x04,
@@ -106,9 +107,9 @@ public class GroupRequestPacketTests
         packet.MaxLevel.Should().Be((byte)0x25);
         packet.MaxWarrior.Should().Be((byte)0x01);
         packet.MaxWizard.Should().Be((byte)0x02);
-        packet.MaxMonk.Should().Be((byte)0x03);
+        packet.MaxRogue.Should().Be((byte)0x03);
         packet.MaxPriest.Should().Be((byte)0x04);
-        packet.MaxRogue.Should().Be((byte)0x05);
+        packet.MaxMonk.Should().Be((byte)0x05);
     }
 
     [Theory]

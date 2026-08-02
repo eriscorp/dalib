@@ -19,7 +19,7 @@ namespace DALib.Networking.Packets.Client;
 ///         Groupbox form (4): <c>[string8 Leader][string8 Title][string8 Note][u8 MinLevel]
 ///         [u8 MaxLevel][u8 MaxWarrior][u8 MaxWizard][u8 MaxRogue][u8 MaxPriest][u8 MaxMonk]</c>.
 ///         There is no trailing reserved byte. The five class-cap bytes are on the wire in the order
-///         Warrior, Wizard, Monk, Priest, Rogue.
+///         Warrior, Wizard, Rogue, Priest, Monk — the top-to-bottom row order of the recruit dialog.
 ///     </para>
 /// </remarks>
 [ClientOpcode(ClientOpcode.GroupRequest)]
@@ -166,9 +166,9 @@ public sealed record GroupRequestPacket : ClientPacket
                 writer.WriteByte(MaxLevel.Value);
                 writer.WriteByte(MaxWarrior.Value);
                 writer.WriteByte(MaxWizard.Value);
-                writer.WriteByte(MaxMonk.Value);
-                writer.WriteByte(MaxPriest.Value);
                 writer.WriteByte(MaxRogue.Value);
+                writer.WriteByte(MaxPriest.Value);
+                writer.WriteByte(MaxMonk.Value);
 
                 // No trailing reserved byte on this form.
                 break;
@@ -207,9 +207,9 @@ public sealed record GroupRequestPacket : ClientPacket
                     MaxLevel = reader.ReadByte(),
                     MaxWarrior = reader.ReadByte(),
                     MaxWizard = reader.ReadByte(),
-                    MaxMonk = reader.ReadByte(),
-                    MaxPriest = reader.ReadByte(),
                     MaxRogue = reader.ReadByte(),
+                    MaxPriest = reader.ReadByte(),
+                    MaxMonk = reader.ReadByte(),
                 };
 
             default:
