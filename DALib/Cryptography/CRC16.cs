@@ -6,8 +6,9 @@ namespace DALib.Cryptography;
 ///     Provides methods for calculating 16 bit cyclic redundancy checks
 /// </summary>
 [Obsolete(
-    "Superseded by DALib.Networking.Wire.CrcCcitt, which computes the identical CRC-16-CCITT. " +
-    "This type will be removed in a future major version.")]
+    "Superseded by CrcCcitt in the DALib.Networking package, which computes the identical " +
+    "CRC-16-CCITT and is a separate NuGet package as of DALib 1.0.0-beta4. This type will be " +
+    "removed in a future major version.")]
 public static class CRC16
 {
     private static readonly ushort[] CRC16_TABLE =
