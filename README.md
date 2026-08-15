@@ -27,17 +27,15 @@ dotnet add package DALib --prerelease
 
 ## Networking
 
-The DOOMVAS packet library — typed packets, wire framing, and the wire
-"cryptography" (CRC, dialog obfuscation, per-connection state) — lives in a
-separate package as of DALib 1.0.0-beta4:
+DALib also provides a DOOMVAS packet library [DALib.Networking](https://github.com/eriscorp/Dalib.Networking) 
+which includes typed packets, wire framing, and the wire "cryptography" (CRC, 
+dialog obfuscation, per-connection state. 
 
 ```
 dotnet add package DALib.Networking
 ```
 
-It has no dependency on DALib, so speaking the protocol no longer pulls in
-SkiaSharp and its native assets. Source at
-[eriscorp/Dalib.Networking](https://github.com/eriscorp/Dalib.Networking).
+It has no dependency on DALib.
 
 ## Companion tool
 
