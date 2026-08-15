@@ -26,7 +26,7 @@
         <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
     </PropertyGroup>
     <ItemGroup>
-        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath=""/>
+        <None Include="$(MSBuildThisFileDirectory)../README.md" Pack="true" PackagePath=""/>
     </ItemGroup>
     <ItemGroup>
         <None Include="hybrasyl-512x512.png" Pack="true" PackagePath=""/>
