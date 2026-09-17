@@ -221,7 +221,8 @@ public static class Graphics
             if (c <= 127)
                 return -1;
 
-            KoreanEncoding ??= Encoding.GetEncoding(949);
+            // Encoding.GetEncoding(949) throws unless the host has registered the code-pages provider.
+            KoreanEncoding ??= CodePagesEncodingProvider.Instance.GetEncoding(949)!;
 
             Span<char> chars = [c];
             Span<byte> bytes = stackalloc byte[2];
@@ -234,13 +235,15 @@ public static class Graphics
             var lead = bytes[0];
             var trail = bytes[1];
 
-            // Hangul Jamo: lead 0xA4, trail 0xA1-0xD3 -> indices 0-50
-            if ((lead == 0xA4) && trail is >= 0xA1 and <= 0xD3)
-                return trail - 0xA1;
+            // The shipped han*.fnt face stores the 2350 syllables first and the 51 Jamo after them.
 
-            // Hangul syllables: lead 0xB0-0xC8, trail 0xA1-0xFE -> indices 51-2400
+            // Hangul syllables: lead 0xB0-0xC8, trail 0xA1-0xFE -> indices 0-2349
             if (lead is >= 0xB0 and <= 0xC8 && trail is >= 0xA1 and <= 0xFE)
-                return 51 + (lead - 0xB0) * 94 + (trail - 0xA1);
+                return (lead - 0xB0) * 94 + (trail - 0xA1);
+
+            // Hangul Jamo: lead 0xA4, trail 0xA1-0xD3 -> indices 2350-2400
+            if ((lead == 0xA4) && trail is >= 0xA1 and <= 0xD3)
+                return 2350 + (trail - 0xA1);
 
             return -1;
         }
